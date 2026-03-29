@@ -1,7 +1,8 @@
 <template>
-  <div class="min-h-screen bg-gray-950 text-white flex flex-col">
+  <div class="min-h-screen text-white flex flex-col relative">
+    <DynamicBackground :type="media.filterType as any" />
 
-    <AppHeader @add="formDrawer = true" />
+    <AppHeader @add="formDrawer = true" @stats="statsDrawer = true" />
     <FilterBar />
 
     <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
@@ -62,6 +63,9 @@
       @saved="editTarget = null"
     />
 
+    <!-- Stats drawer -->
+    <StatsDrawer v-model="statsDrawer" />
+
     <!-- Detail drawer -->
     <DetailDrawer
       v-model="detailDrawer"
@@ -105,17 +109,20 @@ import { Inbox, Plus, SearchX, Trash2 } from 'lucide-vue-next'
 import { useMediaStore } from '@/stores/media'
 import { useUiStore } from '@/stores/ui'
 import type { Media } from '@/types'
-import AppHeader       from '@/components/layout/AppHeader.vue'
-import FilterBar       from '@/components/layout/FilterBar.vue'
-import MediaCard       from '@/components/media/MediaCard.vue'
-import MediaFormDrawer from '@/components/media/MediaFormDrawer.vue'
-import DetailDrawer    from '@/components/media/DetailDrawer.vue'
+import AppHeader          from '@/components/layout/AppHeader.vue'
+import FilterBar          from '@/components/layout/FilterBar.vue'
+import MediaCard          from '@/components/media/MediaCard.vue'
+import MediaFormDrawer    from '@/components/media/MediaFormDrawer.vue'
+import DetailDrawer       from '@/components/media/DetailDrawer.vue'
+import StatsDrawer        from '@/components/ui/StatsDrawer.vue'
+import DynamicBackground  from '@/components/layout/DynamicBackground.vue'
 
 const media = useMediaStore()
 const ui    = useUiStore()
 
 const formDrawer   = ref(false)
 const detailDrawer = ref(false)
+const statsDrawer  = ref(false)
 const editTarget   = ref<Media | null>(null)
 const detailTarget = ref<Media | null>(null)
 const deleteTarget = ref<string | null>(null)

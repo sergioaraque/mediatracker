@@ -21,6 +21,14 @@
         <!-- Actions -->
         <div class="flex items-center gap-2">
           <button
+            @click="$emit('stats')"
+            class="btn-ghost flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl"
+            title="Estadísticas"
+          >
+            <BarChart2 class="w-4 h-4" />
+            <span class="hidden sm:inline">Stats</span>
+          </button>
+          <button
             @click="$emit('add')"
             class="btn-primary flex items-center gap-1.5 text-sm"
           >
@@ -106,14 +114,14 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { Clapperboard, Plus, LogOut, KeyRound, X } from 'lucide-vue-next'
+import { Clapperboard, Plus, LogOut, KeyRound, X, BarChart2 } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth'
 import { useMediaStore } from '@/stores/media'
 import { useUiStore } from '@/stores/ui'
 import { useRouter } from 'vue-router'
 import StatPill from './StatPill.vue'
 
-defineEmits<{ add: [] }>()
+defineEmits<{ add: []; stats: [] }>()
 
 const auth   = useAuthStore()
 const media  = useMediaStore()

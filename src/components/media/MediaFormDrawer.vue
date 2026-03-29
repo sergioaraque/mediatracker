@@ -47,6 +47,59 @@
             <!-- Fields -->
             <div class="flex-1 flex flex-col gap-4">
 
+              <!-- Autocomplete TMDB (solo películas y series) -->
+              <div v-if="form.type !== 'book'" class="relative" ref="searchRef">
+                <label class="label">Autocompletar desde TMDB</label>
+                <div class="flex gap-2">
+                  <div class="relative flex-1">
+                    <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                    <input
+                      v-model="searchQ"
+                      type="text"
+                      class="input pl-9"
+                      :placeholder="searchPlaceholder"
+                      @keydown.enter.prevent="runSearch"
+                      @focus="searchOpen = !!searchResults.length"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    :disabled="!hasTmdbKey || searchLoading || searchQ.trim().length < 2"
+                    class="btn-secondary px-4 shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+                    @click="runSearch"
+                  >
+                    <Loader2 v-if="searchLoading" class="w-4 h-4 animate-spin" />
+                    <Search v-else class="w-4 h-4" />
+                  </button>
+                </div>
+                <!-- No TMDB key notice -->
+                <p v-if="!hasTmdbKey" class="text-amber-400/80 text-xs mt-1 flex items-center gap-1">
+                  <AlertTriangle class="w-3 h-3 shrink-0" />
+                  Añade <code class="bg-white/5 px-1 rounded">VITE_TMDB_API_KEY</code> en .env.local
+                </p>
+                <!-- Dropdown -->
+                <Transition name="fade">
+                  <div
+                    v-if="searchOpen && searchResults.length"
+                    class="absolute top-full left-0 right-0 mt-1 bg-gray-950 border border-white/10 rounded-xl shadow-2xl overflow-hidden z-10 max-h-64 overflow-y-auto"
+                  >
+                    <button
+                      v-for="r in searchResults"
+                      :key="r.id"
+                      class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-white/5 text-left transition-colors"
+                      @click="applyResult(r)"
+                    >
+                      <img v-if="r.poster" :src="r.poster" class="w-9 shrink-0 rounded object-cover" style="aspect-ratio:2/3" />
+                      <div v-else class="w-9 shrink-0 rounded bg-white/10" style="aspect-ratio:2/3" />
+                      <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-white truncate">{{ r.title }}</p>
+                        <p class="text-xs text-gray-500 truncate">{{ [r.year, r.genre].filter(Boolean).join(' · ') }}</p>
+                      </div>
+                    </button>
+                  </div>
+                </Transition>
+              </div>
+
               <!-- Title -->
               <div>
                 <label class="label">Título *</label>
@@ -165,8 +218,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
-import { X, ChevronDown, Star, Tv, Loader2 } from 'lucide-vue-next'
+import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
+import { X, ChevronDown, Star, Tv, Loader2, Search, AlertTriangle } from 'lucide-vue-next'
 import { Film, BookOpen } from 'lucide-vue-next'
 import { useMediaStore } from '@/stores/media'
 import { useUiStore } from '@/stores/ui'
@@ -198,7 +251,10 @@ const blank = (): MediaFormData => ({
 const form = ref<MediaFormData>(blank())
 
 watch(() => props.modelValue, (open) => {
-  if (!open) return
+  if (!open) {
+    searchQ.value = ''; searchResults.value = []; searchOpen.value = false
+    return
+  }
   imgError.value = false
   if (props.editMedia) {
     const clean = Object.fromEntries(
@@ -227,6 +283,79 @@ const previewGradient = computed(() => ({
   book:   'bg-gradient-to-br from-amber-900 to-amber-800',
 }[form.value.type]))
 
+/* ── Autocomplete ──────────────────────────────────────────── */
+const TMDB_KEY  = import.meta.env.VITE_TMDB_API_KEY ?? ''
+const hasTmdbKey = !!TMDB_KEY
+
+const TMDB_GENRES: Record<number, string> = {
+  28:'Acción',12:'Aventura',16:'Animación',35:'Comedia',80:'Crimen',99:'Documental',
+  18:'Drama',10751:'Familia',14:'Fantasía',36:'Historia',27:'Terror',9648:'Misterio',
+  10749:'Romance',878:'Ciencia ficción',53:'Thriller',10752:'Bélica',37:'Western',
+  10759:'Acción y aventura',10765:'Sci-Fi y fantasía',10768:'Guerra y política',
+}
+
+interface SearchResult { id: string; title: string; year: string; genre: string; poster: string; cover: string; description: string }
+
+const searchRef     = ref<HTMLElement>()
+const searchQ       = ref('')
+const searchResults = ref<SearchResult[]>([])
+const searchLoading = ref(false)
+const searchOpen    = ref(false)
+
+const searchPlaceholder = computed(() => ({
+  movie:  'Título de película…',
+  series: 'Título de serie…',
+  book:   '',
+}[form.value.type]))
+
+async function runSearch() {
+  if (!hasTmdbKey || !searchQ.value.trim() || searchLoading.value) return
+  searchLoading.value = true
+  searchOpen.value    = false
+  try {
+    searchResults.value = await searchTmdb(searchQ.value, form.value.type as 'movie' | 'series')
+    searchOpen.value    = searchResults.value.length > 0
+  } catch { searchResults.value = [] }
+  finally { searchLoading.value = false }
+}
+
+async function searchTmdb(q: string, type: 'movie' | 'series'): Promise<SearchResult[]> {
+  const endpoint = type === 'movie' ? 'movie' : 'tv'
+  const res = await fetch(
+    `https://api.themoviedb.org/3/search/${endpoint}?api_key=${TMDB_KEY}&query=${encodeURIComponent(q)}&language=es-ES&page=1`
+  )
+  const data = await res.json()
+  return (data.results ?? []).slice(0, 6).map((r: any) => ({
+    id:          String(r.id),
+    title:       r.title ?? r.name ?? '',
+    year:        (r.release_date ?? r.first_air_date ?? '').slice(0, 4),
+    genre:       (r.genre_ids ?? []).slice(0, 2).map((id: number) => TMDB_GENRES[id]).filter(Boolean).join(', '),
+    poster:      r.poster_path ? `https://image.tmdb.org/t/p/w185${r.poster_path}` : '',
+    cover:       r.poster_path ? `https://image.tmdb.org/t/p/w500${r.poster_path}` : '',
+    description: r.overview ?? '',
+  }))
+}
+
+
+function applyResult(r: SearchResult) {
+  form.value.title       = r.title
+  form.value.year        = r.year ? parseInt(r.year) : null
+  form.value.genre       = r.genre || null
+  form.value.cover_url   = r.cover || null
+  form.value.description = r.description || null
+  imgError.value         = false
+  searchQ.value          = ''
+  searchOpen.value       = false
+  searchResults.value    = []
+}
+
+function onClickOutside(e: MouseEvent) {
+  if (searchRef.value && !searchRef.value.contains(e.target as Node)) searchOpen.value = false
+}
+onMounted(()  => document.addEventListener('mousedown', onClickOutside))
+onUnmounted(() => document.removeEventListener('mousedown', onClickOutside))
+
+/* ── ─────────────────────────────────────────────────────── */
 function close() { emit('update:modelValue', false) }
 
 async function submit() {

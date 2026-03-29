@@ -28,10 +28,11 @@
       <div class="relative w-full sm:w-48 lg:w-64">
         <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
         <input
-          v-model="media.search"
+          :value="localSearch"
           type="search"
           placeholder="Buscar..."
           class="input pl-9 py-1.5 text-sm"
+          @input="onSearchInput"
         />
       </div>
 
@@ -58,10 +59,11 @@
 </template>
 
 <script setup lang="ts">
+import { ref, watch } from 'vue'
 import { Search, ChevronDown } from 'lucide-vue-next'
 import { useMediaStore } from '@/stores/media'
 import type { SortField, SortOrder } from '@/stores/media'
-import TabBtn    from './TabBtn.vue'
+import TabBtn     from './TabBtn.vue'
 import StatusPill from './StatusPill.vue'
 
 const media = useMediaStore()
@@ -71,6 +73,20 @@ const statuses = [
   { value: 'pending',  label: 'Pendiente', color: 'amber' },
   { value: 'watched',  label: 'Visto',     color: 'emerald' },
 ] as const
+
+// Debounced search: el input local responde al instante,
+// el store (y el filtrado del grid) solo se actualiza al parar de escribir.
+const localSearch = ref(media.search)
+let debounceTimer = 0
+
+function onSearchInput(e: Event) {
+  localSearch.value = (e.target as HTMLInputElement).value
+  clearTimeout(debounceTimer)
+  debounceTimer = window.setTimeout(() => { media.search = localSearch.value }, 280)
+}
+
+// Sincroniza si el store se limpia desde fuera (ej. "Limpiar filtros")
+watch(() => media.search, v => { if (v !== localSearch.value) localSearch.value = v })
 
 function onSortChange(e: Event) {
   const [field, order] = (e.target as HTMLSelectElement).value.split(':')
