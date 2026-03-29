@@ -13,17 +13,19 @@ export const useMediaStore = defineStore('media', () => {
   const all     = ref<Media[]>([])
   const loading = ref(false)
 
-  const filterType   = ref<string | null>(null)
-  const filterStatus = ref<string | null>(null)
-  const search       = ref('')
-  const sortField    = ref<SortField>('$createdAt')
-  const sortOrder    = ref<SortOrder>('DESC')
+  const filterType      = ref<string | null>(null)
+  const filterStatus    = ref<string | null>(null)
+  const filterMinRating = ref<number | null>(null)
+  const search          = ref('')
+  const sortField       = ref<SortField>('$createdAt')
+  const sortOrder       = ref<SortOrder>('DESC')
 
   const filtered = computed(() => {
     let r = [...all.value]
 
-    if (filterType.value)   r = r.filter(m => m.type   === filterType.value)
-    if (filterStatus.value) r = r.filter(m => m.status === filterStatus.value)
+    if (filterType.value)      r = r.filter(m => m.type   === filterType.value)
+    if (filterStatus.value)    r = r.filter(m => m.status === filterStatus.value)
+    if (filterMinRating.value) r = r.filter(m => (m.rating ?? 0) >= filterMinRating.value!)
 
     if (search.value) {
       const q = search.value.toLowerCase()
@@ -121,7 +123,7 @@ export const useMediaStore = defineStore('media', () => {
 
   return {
     all, loading, filtered,
-    filterType, filterStatus, search, sortField, sortOrder,
+    filterType, filterStatus, filterMinRating, search, sortField, sortOrder,
     fetch, create, update, remove, cycleStatus, getProgress,
   }
 })

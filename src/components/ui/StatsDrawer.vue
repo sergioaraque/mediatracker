@@ -87,6 +87,37 @@
             </div>
           </div>
 
+          <!-- ── Actividad reciente ──────────────────────────── -->
+          <div v-if="recentActivity.length">
+            <SectionTitle>Actividad reciente</SectionTitle>
+            <div class="space-y-2">
+              <div
+                v-for="item in recentActivity"
+                :key="item.$id"
+                class="flex items-center gap-3 p-3 rounded-xl bg-white/4 border border-white/5"
+              >
+                <div class="w-8 h-11 rounded-lg overflow-hidden shrink-0 border border-white/5">
+                  <img v-if="item.cover_url" :src="item.cover_url" :alt="item.title" class="w-full h-full object-cover" loading="lazy" />
+                  <div v-else class="w-full h-full flex items-center justify-center text-[16px]">
+                    {{ item.type === 'movie' ? '🎬' : item.type === 'series' ? '📺' : '📚' }}
+                  </div>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-medium text-white truncate">{{ item.title }}</p>
+                  <p class="text-xs text-gray-500">{{ relativeTime(item.$updatedAt) }}</p>
+                </div>
+                <span
+                  class="shrink-0 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full"
+                  :class="{
+                    'bg-blue-500/10 text-blue-300':    item.status === 'watching',
+                    'bg-amber-500/10 text-amber-300':  item.status === 'pending',
+                    'bg-emerald-500/10 text-emerald-300': item.status === 'watched',
+                  }"
+                >{{ item.status === 'watching' ? 'Viendo' : item.status === 'watched' ? 'Visto' : 'Pendiente' }}</span>
+              </div>
+            </div>
+          </div>
+
           <!-- Empty -->
           <div v-if="total === 0" class="flex flex-col items-center justify-center py-16 text-center">
             <Inbox class="w-12 h-12 text-gray-700 mb-4" />
@@ -210,4 +241,22 @@ const topGenres = computed(() => {
     .slice(0, 12)
     .map(([genre, count]) => ({ genre, count }))
 })
+
+const recentActivity = computed(() =>
+  [...media.all]
+    .sort((a, b) => new Date(b.$updatedAt).getTime() - new Date(a.$updatedAt).getTime())
+    .slice(0, 8)
+)
+
+function relativeTime(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime()
+  const min  = Math.floor(diff / 60_000)
+  if (min < 1)   return 'Ahora mismo'
+  if (min < 60)  return `Hace ${min} min`
+  const h = Math.floor(min / 60)
+  if (h < 24)    return `Hace ${h}h`
+  const d = Math.floor(h / 24)
+  if (d < 7)     return `Hace ${d}d`
+  return new Date(iso).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
+}
 </script>

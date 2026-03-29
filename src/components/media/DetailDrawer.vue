@@ -12,13 +12,23 @@
       >
         <!-- Hero cover -->
         <div class="relative h-56 shrink-0 overflow-hidden">
+          <!-- TMDB backdrop (wide cinematic image) -->
           <img
-            v-if="media.cover_url"
+            v-if="backdropUrl"
+            :src="backdropUrl"
+            :alt="media.title"
+            class="w-full h-full object-cover transition-opacity duration-500"
+            :class="backdropUrl ? 'opacity-100' : 'opacity-0'"
+          />
+          <!-- Fallback: poster or gradient -->
+          <img
+            v-else-if="media.cover_url"
             :src="media.cover_url"
             :alt="media.title"
             class="w-full h-full object-cover"
           />
           <div v-else class="w-full h-full" :class="gradient" />
+
           <div class="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent" />
 
           <!-- Close + Edit actions -->
@@ -64,7 +74,6 @@
             <div v-if="loadingProgress" class="h-20 rounded-xl bg-white/5 animate-pulse" />
 
             <div v-else-if="progress" class="bg-white/5 rounded-xl p-4 space-y-3">
-              <!-- Season/episode bar -->
               <div class="flex items-center justify-between text-sm">
                 <span class="text-gray-300">
                   T{{ progress.current_season ?? media.current_season ?? '—' }}
@@ -75,7 +84,6 @@
                 </span>
               </div>
 
-              <!-- Progress bar -->
               <div v-if="progressPercent !== null" class="h-1.5 rounded-full bg-white/10 overflow-hidden">
                 <div
                   class="h-full rounded-full bg-gradient-to-r from-violet-500 to-indigo-500 transition-all duration-500"
@@ -159,13 +167,36 @@ const store   = useMediaStore()
 const ui      = useUiStore()
 const progress        = ref<Progress | null>(null)
 const loadingProgress = ref(false)
+const backdropUrl     = ref<string | null>(null)
+
+const tmdbKey = import.meta.env.VITE_TMDB_API_KEY as string | undefined
 
 watch(() => props.media, async (m) => {
-  progress.value = null
-  if (!m || m.type !== 'series') return
-  loadingProgress.value = true
-  try { progress.value = await store.getProgress(m.$id) }
-  finally { loadingProgress.value = false }
+  progress.value    = null
+  backdropUrl.value = null
+
+  if (!m) return
+
+  if (m.type === 'series') {
+    loadingProgress.value = true
+    try { progress.value = await store.getProgress(m.$id) }
+    finally { loadingProgress.value = false }
+  }
+
+  // Fetch TMDB backdrop for movies and series
+  if (tmdbKey && (m.type === 'movie' || m.type === 'series') && m.title) {
+    const endpoint = m.type === 'movie' ? 'movie' : 'tv'
+    try {
+      const res  = await fetch(
+        `https://api.themoviedb.org/3/search/${endpoint}?api_key=${tmdbKey}&query=${encodeURIComponent(m.title)}&language=es-ES&page=1`
+      )
+      const data = await res.json()
+      const hit  = data.results?.[0]
+      if (hit?.backdrop_path) {
+        backdropUrl.value = `https://image.tmdb.org/t/p/w1280${hit.backdrop_path}`
+      }
+    } catch { /* ignore — will fallback to poster/gradient */ }
+  }
 }, { immediate: true })
 
 const gradient = computed(() => props.media ? ({

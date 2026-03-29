@@ -8,7 +8,8 @@ export interface Toast {
 }
 
 export const useUiStore = defineStore('ui', () => {
-  const toasts = ref<Toast[]>([])
+  const toasts   = ref<Toast[]>([])
+  const viewMode = ref<'grid' | 'list'>('grid')
 
   function toast(message: string, type: Toast['type'] = 'success') {
     const id = Math.random().toString(36).slice(2)
@@ -20,5 +21,5 @@ export const useUiStore = defineStore('ui', () => {
     toasts.value = toasts.value.filter(t => t.id !== id)
   }
 
-  return { toasts, toast, dismiss }
+  return { toasts, toast, dismiss, viewMode }
 })

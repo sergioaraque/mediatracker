@@ -20,6 +20,26 @@
       </div>
     </div>
 
+    <!-- ── MOVIE frame: film-strip bars top + bottom ─────────── -->
+    <template v-if="media.type === 'movie'">
+      <div class="film-strip film-strip--top" />
+      <div class="film-strip film-strip--bottom" />
+    </template>
+
+    <!-- ── SERIES frame: TV corner brackets ──────────────────── -->
+    <template v-if="media.type === 'series'">
+      <div class="tv-corner tv-corner--tl" />
+      <div class="tv-corner tv-corner--tr" />
+      <div class="tv-corner tv-corner--bl" />
+      <div class="tv-corner tv-corner--br" />
+    </template>
+
+    <!-- ── BOOK frame: dog-ear fold + spine ──────────────────── -->
+    <template v-if="media.type === 'book'">
+      <div class="book-spine" />
+      <div class="book-dogear" />
+    </template>
+
     <!-- Bottom gradient -->
     <div class="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none" />
 
@@ -35,7 +55,7 @@
       <span class="text-[11px] font-bold text-white leading-none">{{ media.rating }}</span>
     </div>
 
-    <!-- Series progress — top left -->
+    <!-- Series progress — top left (shifted right of the strip) -->
     <div
       v-if="media.type === 'series' && media.current_season"
       class="absolute top-2.5 left-3.5 flex items-center gap-1 bg-black/65 backdrop-blur-sm rounded-full px-1.5 py-0.5 border border-violet-500/30"
@@ -97,7 +117,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Star, Pencil, Trash2, Film, Tv, BookOpen, Eye, Clock, CheckCheck, RotateCcw } from 'lucide-vue-next'
+import { Star, Pencil, Trash2, Film, Tv, BookOpen, Eye, CheckCheck, RotateCcw } from 'lucide-vue-next'
 import { useMediaStore } from '@/stores/media'
 import type { Media } from '@/types'
 
@@ -138,8 +158,6 @@ const statusDotClass = computed(() => ({
   watching: 'bg-blue-400', pending: 'bg-amber-400', watched: 'bg-emerald-400',
 }[props.media.status]))
 
-// Cycle: pending → watching → watched → pending
-// Button shows the NEXT state so user knows what will happen
 const nextState = computed(() => ({
   pending: 'watching', watching: 'watched', watched: 'pending',
 }[props.media.status] as 'watching' | 'watched' | 'pending'))
@@ -170,4 +188,58 @@ async function cycleStatus() {
 }
 .action-btn:hover .action-icon  { transform: scale(1.1); }
 .action-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+
+/* ── Film-strip bars (movie) ─────────────────────────────── */
+.film-strip {
+  position: absolute; left: 0; right: 0; height: 14px; z-index: 10; pointer-events: none;
+  background-color: rgba(0,0,0,.75);
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent 0px, transparent 6px,
+    rgba(255,255,255,.15) 6px, rgba(255,255,255,.15) 8px,
+    transparent 8px, transparent 18px
+  );
+  background-size: 24px 100%;
+}
+.film-strip--top    { top: 0; }
+.film-strip--bottom { bottom: 0; }
+
+/* ── TV corner brackets (series) ────────────────────────── */
+.tv-corner {
+  position: absolute; width: 12px; height: 12px; z-index: 10; pointer-events: none;
+  border-color: rgba(167,139,250,.55); /* violet-400/55 */
+  border-style: solid; border-width: 0;
+}
+.tv-corner--tl { top: 6px;    left: 6px;    border-top-width: 2px;    border-left-width: 2px;    border-top-left-radius: 3px; }
+.tv-corner--tr { top: 6px;    right: 6px;   border-top-width: 2px;    border-right-width: 2px;   border-top-right-radius: 3px; }
+.tv-corner--bl { bottom: 6px; left: 6px;    border-bottom-width: 2px; border-left-width: 2px;    border-bottom-left-radius: 3px; }
+.tv-corner--br { bottom: 6px; right: 6px;   border-bottom-width: 2px; border-right-width: 2px;   border-bottom-right-radius: 3px; }
+
+/* ── Book dog-ear + spine (book) ─────────────────────────── */
+.book-spine {
+  position: absolute; top: 0; bottom: 0; left: 0; width: 8px; z-index: 10; pointer-events: none;
+  background: linear-gradient(90deg,
+    rgba(217,119,6,.35) 0%,   /* amber-600/35 */
+    rgba(217,119,6,.12) 60%,
+    transparent 100%
+  );
+  border-right: 1px solid rgba(251,191,36,.15); /* amber-400/15 */
+}
+.book-dogear {
+  position: absolute; top: 0; right: 0; z-index: 10; pointer-events: none;
+  width: 0; height: 0;
+  border-style: solid;
+  border-width: 0 20px 20px 0;
+  border-color: transparent rgba(0,0,0,.7) transparent transparent;
+  filter: drop-shadow(-1px 1px 2px rgba(0,0,0,.5));
+}
+.book-dogear::after {
+  content: '';
+  position: absolute;
+  top: 0; right: -20px;
+  width: 0; height: 0;
+  border-style: solid;
+  border-width: 0 20px 20px 0;
+  border-color: transparent rgba(217,119,6,.25) transparent transparent;
+}
 </style>

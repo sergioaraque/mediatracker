@@ -3,7 +3,7 @@
     <DynamicBackground :type="media.filterType as any" />
 
     <AppHeader @add="formDrawer = true" @stats="statsDrawer = true" />
-    <FilterBar />
+    <FilterBar ref="filterBarRef" />
 
     <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
 
@@ -39,12 +39,24 @@
         <button @click="clearFilters" class="btn-secondary text-sm px-4 py-2">Limpiar filtros</button>
       </div>
 
-      <!-- Grid -->
+      <!-- Grid view -->
       <div
-        v-else
+        v-else-if="ui.viewMode === 'grid'"
         class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4"
       >
         <MediaCard
+          v-for="item in media.filtered"
+          :key="item.$id"
+          :media="item"
+          @detail="openDetail"
+          @edit="openEdit"
+          @delete="handleDelete"
+        />
+      </div>
+
+      <!-- List view -->
+      <div v-else class="flex flex-col gap-1.5">
+        <MediaRow
           v-for="item in media.filtered"
           :key="item.$id"
           :media="item"
@@ -107,11 +119,13 @@
 import { ref, onMounted } from 'vue'
 import { Inbox, Plus, SearchX, Trash2 } from 'lucide-vue-next'
 import { useMediaStore } from '@/stores/media'
-import { useUiStore } from '@/stores/ui'
+import { useUiStore }    from '@/stores/ui'
+import { useKeyboard }   from '@/composables/useKeyboard'
 import type { Media } from '@/types'
 import AppHeader          from '@/components/layout/AppHeader.vue'
 import FilterBar          from '@/components/layout/FilterBar.vue'
 import MediaCard          from '@/components/media/MediaCard.vue'
+import MediaRow           from '@/components/media/MediaRow.vue'
 import MediaFormDrawer    from '@/components/media/MediaFormDrawer.vue'
 import DetailDrawer       from '@/components/media/DetailDrawer.vue'
 import StatsDrawer        from '@/components/ui/StatsDrawer.vue'
@@ -126,8 +140,14 @@ const statsDrawer  = ref(false)
 const editTarget   = ref<Media | null>(null)
 const detailTarget = ref<Media | null>(null)
 const deleteTarget = ref<string | null>(null)
+const filterBarRef = ref<InstanceType<typeof FilterBar>>()
 
 onMounted(() => media.fetch())
+
+useKeyboard({
+  onNew:    () => { formDrawer.value = true },
+  onSearch: () => { filterBarRef.value?.focusSearch() },
+})
 
 function openDetail(m: Media) {
   detailTarget.value = m
@@ -156,9 +176,10 @@ async function confirmDelete() {
 }
 
 function clearFilters() {
-  media.filterType   = null
-  media.filterStatus = null
-  media.search       = ''
+  media.filterType      = null
+  media.filterStatus    = null
+  media.filterMinRating = null
+  media.search          = ''
 }
 </script>
 
