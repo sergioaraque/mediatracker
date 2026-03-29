@@ -1,0 +1,5 @@
+.env
+.env.local
+public/js/config.js
+dist/
+node_modules/

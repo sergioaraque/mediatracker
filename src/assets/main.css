@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+@layer base {
+  body { @apply bg-slate-950 text-slate-100 antialiased; }
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { @apply bg-slate-950; }
+  ::-webkit-scrollbar-thumb { @apply bg-slate-700 rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-slate-600; }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 font-medium rounded-xl transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500;
+  }
+  .btn-primary {
+    @apply btn bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white shadow-lg shadow-indigo-900/30;
+  }
+  .btn-secondary {
+    @apply btn bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-200;
+  }
+  .btn-ghost {
+    @apply btn text-slate-400 hover:text-white hover:bg-slate-800;
+  }
+  .btn-danger {
+    @apply btn bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20;
+  }
+
+  .input {
+    @apply w-full bg-slate-800/80 border border-slate-700/60 rounded-xl px-4 py-2.5 text-sm text-white
+           placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30
+           transition-colors;
+  }
+  .label {
+    @apply block text-xs font-medium text-slate-400 mb-1.5;
+  }
+
+  .surface {
+    @apply bg-slate-900 border border-slate-800/60;
+  }
+  .surface-raised {
+    @apply bg-slate-800/60 border border-slate-700/40;
+  }
+}
+
+/* Drawer transitions */
+.drawer-enter-active { transition: transform .3s cubic-bezier(.32,.72,0,1); }
+.drawer-leave-active { transition: transform .25s cubic-bezier(.32,.72,0,1); }
+.drawer-enter-from, .drawer-leave-to { transform: translateX(100%); }
+
+.backdrop-enter-active { transition: opacity .2s ease; }
+.backdrop-leave-active { transition: opacity .2s ease; }
+.backdrop-enter-from, .backdrop-leave-to { opacity: 0; }
+
+/* Toast transitions */
+.toast-enter-active { transition: all .25s ease; }
+.toast-leave-active { transition: all .2s ease; }
+.toast-enter-from   { opacity: 0; transform: translateY(8px) scale(.95); }
+.toast-leave-to     { opacity: 0; transform: translateY(4px) scale(.95); }
+
+/* Card stagger */
+.cards-enter-active { transition: all .3s ease; }
+.cards-enter-from   { opacity: 0; transform: translateY(10px); }
