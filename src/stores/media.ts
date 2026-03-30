@@ -1,7 +1,7 @@
 import { defineStore }                                        from 'pinia'
 import { ref, computed }                                       from 'vue'
-import { databases, DB_ID, COLL_MEDIA, COLL_PROGRESS, Query, ID, Permission, Role } from '@/lib/appwrite'
-import type { Media, Progress, MediaFormData }                 from '@/types'
+import { databases, DB_ID, COLL_MEDIA, COLL_PROGRESS, COLL_STATUS_HISTORY, Query, ID, Permission, Role } from '@/lib/appwrite'
+import type { Media, Progress, MediaFormData, StatusHistory }  from '@/types'
 import { useAuthStore }                                        from './auth'
 
 export type SortField = '$createdAt' | 'title' | 'year' | 'rating'
@@ -104,13 +104,56 @@ export const useMediaStore = defineStore('media', () => {
     const cycle: Record<string, string> = { pending: 'watching', watching: 'watched', watched: 'pending' }
     const item = all.value.find(m => m.$id === id)
     if (!item) return
-    const next = cycle[item.status] as Media['status']
-    const finished_at = next === 'watched'  ? new Date().toISOString()
-                      : next === 'pending'  ? null
+    const prev = item.status
+    const next = cycle[prev] as Media['status']
+    const finished_at = next === 'watched' ? new Date().toISOString()
+                      : next === 'pending' ? null
                       : item.finished_at
     item.status      = next
     item.finished_at = finished_at ?? null
     await databases.updateDocument(DB_ID, COLL_MEDIA, id, { status: next, finished_at })
+    // Log history (fire-and-forget, non-blocking)
+    logStatusChange(id, prev, next)
+  }
+
+  function logStatusChange(mediaId: string, from: string, to: string) {
+    const uid = auth.user?.$id
+    if (!uid) return
+    const p = [Permission.read(Role.user(uid)), Permission.delete(Role.user(uid))]
+    databases.createDocument(DB_ID, COLL_STATUS_HISTORY, ID.unique(), {
+      media_id:    mediaId,
+      from_status: from,
+      to_status:   to,
+      changed_at:  new Date().toISOString(),
+    }, p).catch(() => { /* non-critical */ })
+  }
+
+  async function getStatusHistory(mediaId: string): Promise<StatusHistory[]> {
+    const r = await databases.listDocuments(DB_ID, COLL_STATUS_HISTORY, [
+      Query.equal('media_id', mediaId),
+      Query.orderDesc('changed_at'),
+      Query.limit(20),
+    ])
+    return r.documents as unknown as StatusHistory[]
+  }
+
+  async function checkReminders() {
+    if (Notification.permission !== 'granted') return
+    const now = new Date()
+    for (const m of all.value) {
+      if (!m.remind_at) continue
+      const due = new Date(m.remind_at)
+      if (due <= now) {
+        new Notification(`⏰ Recordatorio: ${m.title}`, {
+          body: m.type === 'movie' ? 'Tienes pendiente ver esta película' : m.type === 'series' ? 'Continúa con esta serie' : 'Retoma este libro',
+          icon: m.cover_url ?? '/icon.svg',
+          tag:  m.$id,
+        })
+        // Clear the reminder after firing
+        await databases.updateDocument(DB_ID, COLL_MEDIA, m.$id, { remind_at: null })
+        m.remind_at = null
+      }
+    }
   }
 
   async function getProgress(mediaId: string): Promise<Progress | null> {
@@ -130,6 +173,6 @@ export const useMediaStore = defineStore('media', () => {
   return {
     all, loading, filtered,
     filterType, filterStatus, filterMinRating, filterPlatform, search, sortField, sortOrder,
-    fetch, create, update, remove, cycleStatus, getProgress,
+    fetch, create, update, remove, cycleStatus, getProgress, getStatusHistory, checkReminders,
   }
 })

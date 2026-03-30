@@ -130,6 +130,34 @@
             <div v-else class="text-gray-500 text-sm">Sin datos de progreso registrados.</div>
           </div>
 
+          <!-- Reminder badge -->
+          <div v-if="media.remind_at" class="flex items-center gap-2.5 bg-amber-500/8 border border-amber-500/20 rounded-xl px-4 py-3">
+            <Bell class="w-4 h-4 text-amber-400 shrink-0" />
+            <div>
+              <p class="text-xs text-gray-500">Recordatorio</p>
+              <p class="text-sm font-medium text-amber-300 mt-0.5">{{ formatDate(media.remind_at) }}</p>
+            </div>
+          </div>
+
+          <!-- Status history -->
+          <div v-if="history.length">
+            <h3 class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3 flex items-center gap-1.5">
+              <History class="w-3.5 h-3.5" /> Historial
+            </h3>
+            <div class="space-y-1.5">
+              <div
+                v-for="h in history"
+                :key="h.$id"
+                class="flex items-center gap-2.5 text-xs bg-white/3 rounded-lg px-3 py-2"
+              >
+                <span class="font-medium" :class="statusColor(h.from_status)">{{ statusLabel(h.from_status) }}</span>
+                <span class="text-gray-600">→</span>
+                <span class="font-medium" :class="statusColor(h.to_status)">{{ statusLabel(h.to_status) }}</span>
+                <span class="ml-auto text-gray-600">{{ formatDate(h.changed_at) }}</span>
+              </div>
+            </div>
+          </div>
+
           <!-- Meta info -->
           <div class="grid grid-cols-2 gap-3 text-xs">
             <div class="bg-white/5 rounded-xl p-3">
@@ -176,10 +204,10 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { X, Pencil, Star, Trash2, Eye, Clock, CheckCheck } from 'lucide-vue-next'
+import { X, Pencil, Star, Trash2, Eye, Clock, CheckCheck, History, Bell } from 'lucide-vue-next'
 import { useMediaStore } from '@/stores/media'
 import { useUiStore } from '@/stores/ui'
-import type { Media, Progress } from '@/types'
+import type { Media, Progress, StatusHistory } from '@/types'
 import TypeBadge   from './TypeBadge.vue'
 import StatusBadge from './StatusBadge.vue'
 
@@ -194,13 +222,18 @@ const store   = useMediaStore()
 const ui      = useUiStore()
 const progress        = ref<Progress | null>(null)
 const loadingProgress = ref(false)
+const history         = ref<StatusHistory[]>([])
 
 watch(() => props.media, async (m) => {
   progress.value = null
-  if (!m || m.type !== 'series') return
-  loadingProgress.value = true
-  try { progress.value = await store.getProgress(m.$id) }
-  finally { loadingProgress.value = false }
+  history.value  = []
+  if (!m) return
+  if (m.type === 'series') {
+    loadingProgress.value = true
+    try { progress.value = await store.getProgress(m.$id) }
+    finally { loadingProgress.value = false }
+  }
+  store.getStatusHistory(m.$id).then(h => { history.value = h }).catch(() => {})
 }, { immediate: true })
 
 const PLATFORM_EMOJI: Record<string, string> = {
@@ -245,5 +278,12 @@ function confirmDelete() {
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+function statusLabel(s: string) {
+  return ({ watching: 'Viendo', watched: 'Visto', pending: 'Pendiente' }[s] ?? s)
+}
+function statusColor(s: string) {
+  return ({ watching: 'text-blue-300', watched: 'text-emerald-300', pending: 'text-amber-300' }[s] ?? 'text-gray-300')
 }
 </script>

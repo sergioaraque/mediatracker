@@ -178,6 +178,33 @@
                 <textarea v-model="form.description" class="input resize-none" rows="3" placeholder="Sinopsis o notas…" />
               </div>
 
+              <!-- Reminder -->
+              <div class="border border-amber-500/20 rounded-xl p-4 bg-amber-500/5">
+                <div class="flex items-center justify-between mb-2">
+                  <label class="text-amber-300 text-xs font-semibold uppercase tracking-wider flex items-center gap-2">
+                    <Bell class="w-3.5 h-3.5" /> Recordatorio
+                  </label>
+                  <button
+                    v-if="form.remind_at"
+                    type="button"
+                    @click="form.remind_at = null"
+                    class="text-gray-500 hover:text-red-400 transition-colors"
+                  >
+                    <X class="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <input
+                  :value="form.remind_at ? form.remind_at.slice(0, 16) : ''"
+                  @change="e => { form.remind_at = (e.target as HTMLInputElement).value ? new Date((e.target as HTMLInputElement).value).toISOString() : null; requestNotifPermission() }"
+                  type="datetime-local"
+                  class="input text-sm"
+                  :min="minDateTime"
+                />
+                <p v-if="!notifGranted && form.remind_at" class="text-amber-400/70 text-xs mt-1.5 flex items-center gap-1">
+                  <AlertTriangle class="w-3 h-3 shrink-0" /> Necesitas permitir notificaciones en tu navegador
+                </p>
+              </div>
+
               <!-- Series section -->
               <Transition name="fade">
                 <div v-if="form.type === 'series'" class="border border-violet-500/20 rounded-xl p-4 bg-violet-500/5 flex flex-col gap-3">
@@ -231,7 +258,7 @@
 
 <script setup lang="ts">
 import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
-import { X, ChevronDown, Star, Tv, Loader2, Search, AlertTriangle } from 'lucide-vue-next'
+import { X, ChevronDown, Star, Tv, Loader2, Search, AlertTriangle, Bell } from 'lucide-vue-next'
 import { Film, BookOpen } from 'lucide-vue-next'
 import { useMediaStore } from '@/stores/media'
 import { useUiStore } from '@/stores/ui'
@@ -255,7 +282,7 @@ const currentYear = new Date().getFullYear()
 
 const blank = (): MediaFormData => ({
   title: '', type: 'movie', status: 'pending', year: null, genre: null,
-  cover_url: null, rating: null, description: null, platform: null,
+  cover_url: null, rating: null, description: null, platform: null, remind_at: null,
   current_season: null, current_episode: null,
   total_seasons: null, total_episodes: null, progress_notes: null,
 })
@@ -294,6 +321,16 @@ const previewGradient = computed(() => ({
   series: 'bg-gradient-to-br from-violet-900 to-violet-800',
   book:   'bg-gradient-to-br from-amber-900 to-amber-800',
 }[form.value.type]))
+
+/* ── Reminders ────────────────────────────────────────────── */
+const notifGranted = ref(Notification.permission === 'granted')
+const minDateTime  = computed(() => new Date(Date.now() + 60_000).toISOString().slice(0, 16))
+
+async function requestNotifPermission() {
+  if (Notification.permission === 'granted') return
+  const result = await Notification.requestPermission()
+  notifGranted.value = result === 'granted'
+}
 
 /* ── Platforms ────────────────────────────────────────────── */
 const PLATFORMS = [

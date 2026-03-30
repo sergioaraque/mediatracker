@@ -17,6 +17,16 @@ export interface Media {
   current_episode: number | null
   finished_at:     string | null
   platform:        string | null
+  remind_at:       string | null
+}
+
+export interface StatusHistory {
+  $id:         string
+  $createdAt:  string
+  media_id:    string
+  from_status: string
+  to_status:   string
+  changed_at:  string
 }
 
 export interface Progress {
@@ -44,4 +54,5 @@ export interface MediaFormData {
   total_episodes:  number | null
   progress_notes:  string | null
   platform:        string | null
+  remind_at:       string | null
 }
