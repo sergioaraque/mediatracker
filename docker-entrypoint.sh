@@ -6,11 +6,13 @@ if [ -z "$APPWRITE_ENDPOINT" ] || [ -z "$APPWRITE_PROJECT_ID" ]; then
   exit 1
 fi
 
-# Genera /config.js con los valores reales en tiempo de arranque del contenedor
+SAFE_ENDPOINT=$(printf '%s' "$APPWRITE_ENDPOINT"  | sed 's/\\/\\\\/g; s/"/\\"/g')
+SAFE_PROJECT=$(printf  '%s' "$APPWRITE_PROJECT_ID" | sed 's/\\/\\\\/g; s/"/\\"/g')
+
 cat > /usr/share/nginx/html/config.js <<EOF
 window.__APP_CONFIG__ = {
-  endpoint:  "${APPWRITE_ENDPOINT}",
-  projectId: "${APPWRITE_PROJECT_ID}"
+  endpoint:  "${SAFE_ENDPOINT}",
+  projectId: "${SAFE_PROJECT}"
 };
 EOF
 

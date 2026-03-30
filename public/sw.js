@@ -25,7 +25,8 @@ self.addEventListener('fetch', e => {
       if (cached) return cached;
       return fetch(e.request).then(res => {
         if (res.ok) {
-          caches.open(CACHE).then(c => c.put(e.request, res.clone()));
+          const toCache = res.clone(); // clone synchronously before body is consumed
+          caches.open(CACHE).then(c => c.put(e.request, toCache));
         }
         return res;
       });

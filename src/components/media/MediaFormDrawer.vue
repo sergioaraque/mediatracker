@@ -324,6 +324,7 @@ async function searchTmdb(q: string, type: 'movie' | 'series'): Promise<SearchRe
   const res = await fetch(
     `https://api.themoviedb.org/3/search/${endpoint}?api_key=${TMDB_KEY}&query=${encodeURIComponent(q)}&language=es-ES&page=1`
   )
+  if (!res.ok) return []
   const data = await res.json()
   return (data.results ?? []).slice(0, 6).map((r: any) => ({
     id:          String(r.id),
