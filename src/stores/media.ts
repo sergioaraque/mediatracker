@@ -103,8 +103,12 @@ export const useMediaStore = defineStore('media', () => {
     const item = all.value.find(m => m.$id === id)
     if (!item) return
     const next = cycle[item.status] as Media['status']
-    item.status = next
-    await databases.updateDocument(DB_ID, COLL_MEDIA, id, { status: next })
+    const finished_at = next === 'watched'  ? new Date().toISOString()
+                      : next === 'pending'  ? null
+                      : item.finished_at
+    item.status      = next
+    item.finished_at = finished_at ?? null
+    await databases.updateDocument(DB_ID, COLL_MEDIA, id, { status: next, finished_at })
   }
 
   async function getProgress(mediaId: string): Promise<Progress | null> {

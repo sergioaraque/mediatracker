@@ -15,6 +15,7 @@ export interface Media {
   description:     string | null
   current_season:  number | null
   current_episode: number | null
+  finished_at:     string | null
 }
 
 export interface Progress {
