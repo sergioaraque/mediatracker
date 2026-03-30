@@ -11,7 +11,7 @@ export default defineConfig({
       name: 'dev-config-js',
       configureServer(server) {
         server.middlewares.use((req, res, next) => {
-          if (req.url === '/config.js') {
+          if (req.url?.split('?')[0] === '/config.js') {
             res.setHeader('Content-Type', 'application/javascript; charset=utf-8')
             res.setHeader('Cache-Control', 'no-store')
             res.end('window.__APP_CONFIG__ = {};')

@@ -18,6 +18,8 @@ export interface Media {
   finished_at:     string | null
   platform:        string | null
   remind_at:       string | null
+  trailer_url:     string | null
+  review:          string | null
 }
 
 export interface StatusHistory {
@@ -55,4 +57,6 @@ export interface MediaFormData {
   progress_notes:  string | null
   platform:        string | null
   remind_at:       string | null
+  trailer_url:     string | null
+  review:          string | null
 }

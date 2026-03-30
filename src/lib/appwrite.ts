@@ -11,7 +11,7 @@ const projectId = window.__APP_CONFIG__?.projectId || import.meta.env.VITE_APPWR
 
 if (!endpoint || !projectId) {
   console.error(
-    '[MediaLog] Falta configuración de Appwrite.\n' +
+    '[MediaTracker] Falta configuración de Appwrite.\n' +
     '  Dev: crea src/.env.local con VITE_APPWRITE_ENDPOINT y VITE_APPWRITE_PROJECT_ID, luego reinicia Vite.\n' +
     '  Prod: arranca el contenedor con las variables APPWRITE_ENDPOINT y APPWRITE_PROJECT_ID.'
   )

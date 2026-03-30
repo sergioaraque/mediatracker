@@ -7,7 +7,7 @@
         <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/30">
           <Clapperboard class="w-5 h-5 text-white" />
         </div>
-        <span class="font-bold text-xl tracking-tight">MediaLog</span>
+        <span class="font-bold text-xl tracking-tight">MediaTracker</span>
       </div>
       <RouterLink to="/login" class="btn-primary text-sm px-5 py-2.5 flex items-center gap-1.5">
         Entrar <ArrowRight class="w-4 h-4" />
@@ -284,6 +284,22 @@
       </div>
     </section>
 
+    <!-- ── DISCLAIMER ────────────────────────────────────────────────────────── -->
+    <section class="max-w-3xl mx-auto px-6 pb-20">
+      <div class="flex gap-4 bg-white/3 border border-white/8 rounded-2xl px-6 py-5">
+        <Info class="w-5 h-5 text-gray-500 shrink-0 mt-0.5" />
+        <div>
+          <p class="text-sm font-semibold text-gray-300 mb-1">Solo seguimiento, sin contenido</p>
+          <p class="text-sm text-gray-500 leading-relaxed">
+            MediaTracker es una herramienta de <strong class="text-gray-400">organización personal</strong>.
+            No almacena, distribuye ni enlaza películas, series ni libros.
+            Para ver el contenido necesitas acceder a tu plataforma habitual (Netflix, HBO, biblioteca…).
+            Aquí solo llevas el registro de lo que ya consumes.
+          </p>
+        </div>
+      </div>
+    </section>
+
     <!-- ── CTA ────────────────────────────────────────────────────────────────── -->
     <section class="relative overflow-hidden py-28">
       <div class="cta-orb" />
@@ -304,14 +320,14 @@
 
     <!-- ── FOOTER ─────────────────────────────────────────────────────────────── -->
     <footer class="border-t border-white/5 py-8 text-center text-gray-600 text-sm">
-      MediaLog · Hecho con Vue 3 + Appwrite
+      MediaTracker · Hecho con Vue 3 + Appwrite
     </footer>
 
   </div>
 </template>
 
 <script setup lang="ts">
-import { Clapperboard, ArrowRight, Sparkles, Film, Tv, BookOpen } from 'lucide-vue-next'
+import { Clapperboard, ArrowRight, Sparkles, Film, Tv, BookOpen, Info } from 'lucide-vue-next'
 import StepCard from '@/components/landing/StepCard.vue'
 
 // Background poster wall (6-col grid, rotated/blurred)

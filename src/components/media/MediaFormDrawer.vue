@@ -165,11 +165,24 @@
                 </div>
               </div>
 
-              <!-- Cover URL -->
-              <div>
-                <label class="label">URL de portada</label>
-                <input v-model="form.cover_url" type="url" class="input" placeholder="https://…" @input="imgError = false" />
-                <p v-if="imgError" class="text-amber-400 text-xs mt-1">No se pudo cargar la imagen</p>
+              <!-- Cover URL + Trailer -->
+              <div class="grid grid-cols-1 gap-3">
+                <div>
+                  <label class="label">URL de portada</label>
+                  <input v-model="form.cover_url" type="url" class="input" placeholder="https://…" @input="imgError = false" />
+                  <p v-if="imgError" class="text-amber-400 text-xs mt-1">No se pudo cargar la imagen</p>
+                </div>
+                <div v-if="form.type !== 'book'">
+                  <label class="label flex items-center gap-1.5">
+                    <Youtube class="w-3.5 h-3.5 text-red-500" /> Trailer de YouTube
+                  </label>
+                  <input
+                    v-model="form.trailer_url"
+                    type="url"
+                    class="input"
+                    placeholder="https://youtube.com/watch?v=…"
+                  />
+                </div>
               </div>
 
               <!-- Description -->
@@ -258,7 +271,7 @@
 
 <script setup lang="ts">
 import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
-import { X, ChevronDown, Star, Tv, Loader2, Search, AlertTriangle, Bell } from 'lucide-vue-next'
+import { X, ChevronDown, Star, Tv, Loader2, Search, AlertTriangle, Bell, Youtube } from 'lucide-vue-next'
 import { Film, BookOpen } from 'lucide-vue-next'
 import { useMediaStore } from '@/stores/media'
 import { useUiStore } from '@/stores/ui'
@@ -283,6 +296,7 @@ const currentYear = new Date().getFullYear()
 const blank = (): MediaFormData => ({
   title: '', type: 'movie', status: 'pending', year: null, genre: null,
   cover_url: null, rating: null, description: null, platform: null, remind_at: null,
+  trailer_url: null, review: null,
   current_season: null, current_episode: null,
   total_seasons: null, total_episodes: null, progress_notes: null,
 })

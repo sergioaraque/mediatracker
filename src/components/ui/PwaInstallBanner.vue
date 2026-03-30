@@ -8,7 +8,7 @@
         <Download class="w-4 h-4 text-white" />
       </div>
       <div class="flex-1 min-w-0">
-        <p class="text-sm font-semibold text-white">Instalar MediaLog</p>
+        <p class="text-sm font-semibold text-white">Instalar MediaTracker</p>
         <p class="text-xs text-gray-400">Acceso rápido desde tu pantalla de inicio</p>
       </div>
       <button @click="install" class="btn-primary text-xs px-3 py-1.5 rounded-lg shrink-0">

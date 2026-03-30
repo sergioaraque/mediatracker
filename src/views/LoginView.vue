@@ -12,7 +12,7 @@
         <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-xl shadow-violet-500/30 mb-4">
           <Clapperboard class="w-7 h-7 text-white" />
         </div>
-        <h1 class="text-2xl font-bold text-white">MediaLog</h1>
+        <h1 class="text-2xl font-bold text-white">MediaTracker</h1>
         <p class="text-gray-400 text-sm mt-1">Tu catálogo personal</p>
       </div>
 

@@ -3,6 +3,7 @@ import { ref, computed }                                       from 'vue'
 import { databases, DB_ID, COLL_MEDIA, COLL_PROGRESS, COLL_STATUS_HISTORY, Query, ID, Permission, Role } from '@/lib/appwrite'
 import type { Media, Progress, MediaFormData, StatusHistory }  from '@/types'
 import { useAuthStore }                                        from './auth'
+import { useUiStore }                                          from './ui'
 
 export type SortField = '$createdAt' | 'title' | 'year' | 'rating'
 export type SortOrder = 'ASC' | 'DESC'
@@ -115,6 +116,8 @@ export const useMediaStore = defineStore('media', () => {
     try {
       await databases.updateDocument(DB_ID, COLL_MEDIA, id, { status: next, finished_at })
       logStatusChange(id, prev, next)
+      // Prompt rating dialog when marking as watched
+      if (next === 'watched') useUiStore().pendingRatingMedia = item
     } catch (e) {
       // Revert on failure
       item.status      = prev

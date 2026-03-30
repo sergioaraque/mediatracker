@@ -52,6 +52,50 @@
         <!-- Content -->
         <div class="flex-1 overflow-y-auto p-6 space-y-6">
 
+          <!-- Trailer -->
+          <div v-if="media.trailer_url && youtubeId">
+            <h3 class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2 flex items-center gap-1.5">
+              <Youtube class="w-3.5 h-3.5 text-red-500" /> Trailer
+            </h3>
+            <div v-if="!trailerPlaying" class="relative rounded-xl overflow-hidden cursor-pointer group" style="aspect-ratio:16/9" @click="trailerPlaying = true">
+              <img
+                :src="`https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg`"
+                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                :alt="`Trailer de ${media.title}`"
+              />
+              <div class="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                <div class="w-14 h-14 rounded-full bg-red-600 flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform">
+                  <Play class="w-6 h-6 text-white ml-1 fill-white" />
+                </div>
+              </div>
+            </div>
+            <div v-else class="rounded-xl overflow-hidden" style="aspect-ratio:16/9">
+              <iframe
+                :src="`https://www.youtube.com/embed/${youtubeId}?autoplay=1`"
+                class="w-full h-full"
+                frameborder="0"
+                allow="autoplay; encrypted-media"
+                allowfullscreen
+              />
+            </div>
+          </div>
+
+          <!-- Personal review -->
+          <div v-if="media.review">
+            <h3 class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Mi reseña</h3>
+            <div class="bg-white/4 border border-white/8 rounded-xl p-4">
+              <div v-if="media.rating" class="flex items-center gap-1 mb-2">
+                <Star
+                  v-for="n in 10" :key="n"
+                  class="w-3.5 h-3.5"
+                  :class="n <= media.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-700 fill-gray-700'"
+                />
+                <span class="text-xs font-bold text-white ml-1">{{ media.rating }}/10</span>
+              </div>
+              <p class="text-gray-300 text-sm leading-relaxed italic">"{{ media.review }}"</p>
+            </div>
+          </div>
+
           <!-- Description -->
           <div v-if="media.description">
             <h3 class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Sinopsis</h3>
@@ -204,7 +248,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { X, Pencil, Star, Trash2, Eye, Clock, CheckCheck, History, Bell } from 'lucide-vue-next'
+import { X, Pencil, Star, Trash2, Eye, Clock, CheckCheck, History, Bell, Youtube, Play } from 'lucide-vue-next'
 import { useMediaStore } from '@/stores/media'
 import { useUiStore } from '@/stores/ui'
 import type { Media, Progress, StatusHistory } from '@/types'
@@ -239,6 +283,16 @@ watch(() => props.media, async (m) => {
     if (props.media?.$id === currentId) history.value = h
   }).catch(() => {})
 }, { immediate: true })
+
+const trailerPlaying = ref(false)
+watch(() => props.media, () => { trailerPlaying.value = false })
+
+const youtubeId = computed(() => {
+  const url = props.media?.trailer_url
+  if (!url) return null
+  const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?.*?v=|embed\/|v\/))([^&?/\s]{11})/)
+  return m?.[1] ?? null
+})
 
 const PLATFORM_EMOJI: Record<string, string> = {
   'Netflix': '🎬', 'HBO Max': '🟣', 'Prime Video': '📦', 'Disney+': '✨',

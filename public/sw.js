@@ -1,4 +1,4 @@
-const CACHE = 'medialog-v2';
+const CACHE = 'mediatracker-v1';
 
 // Vite hashes asset filenames — cache-first with network fallback is safe
 self.addEventListener('install', () => self.skipWaiting());

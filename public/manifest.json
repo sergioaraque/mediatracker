@@ -1,6 +1,6 @@
 {
-  "name": "MediaLog",
-  "short_name": "MediaLog",
+  "name": "MediaTracker",
+  "short_name": "MediaTracker",
   "description": "Tu catálogo personal de películas, series y libros",
   "start_url": "/",
   "scope": "/",

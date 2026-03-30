@@ -8,7 +8,7 @@
           <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-lg">
             <Clapperboard class="w-4 h-4 text-white" />
           </div>
-          <span class="font-bold text-white tracking-tight hidden sm:block">MediaLog</span>
+          <span class="font-bold text-white tracking-tight hidden sm:block">MediaTracker</span>
         </div>
 
         <!-- Stats pills -->

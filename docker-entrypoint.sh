@@ -16,6 +16,6 @@ window.__APP_CONFIG__ = {
 };
 EOF
 
-echo "[MediaLog] Config generada — endpoint: ${APPWRITE_ENDPOINT} | project: ${APPWRITE_PROJECT_ID}"
+echo "[MediaTracker] Config generada — endpoint: ${APPWRITE_ENDPOINT} | project: ${APPWRITE_PROJECT_ID}"
 
 exec nginx -g "daemon off;"
