@@ -1,20 +1,10 @@
 import { Client, Account, Databases, Storage, Query, ID, Permission, Role } from 'appwrite'
 
-declare global {
-  interface Window {
-    __APP_CONFIG__?: { endpoint: string; projectId: string }
-  }
-}
-
-const endpoint  = window.__APP_CONFIG__?.endpoint  || import.meta.env.VITE_APPWRITE_ENDPOINT  || ''
-const projectId = window.__APP_CONFIG__?.projectId || import.meta.env.VITE_APPWRITE_PROJECT_ID || ''
+const endpoint  = import.meta.env.VITE_APPWRITE_ENDPOINT  as string || ''
+const projectId = import.meta.env.VITE_APPWRITE_PROJECT_ID as string || ''
 
 if (!endpoint || !projectId) {
-  console.error(
-    '[MediaTracker] Falta configuración de Appwrite.\n' +
-    '  Dev: crea src/.env.local con VITE_APPWRITE_ENDPOINT y VITE_APPWRITE_PROJECT_ID, luego reinicia Vite.\n' +
-    '  Prod: arranca el contenedor con las variables APPWRITE_ENDPOINT y APPWRITE_PROJECT_ID.'
-  )
+  console.error('[MediaTracker] Falta configuración. Añade VITE_APPWRITE_ENDPOINT y VITE_APPWRITE_PROJECT_ID en Coolify (o en .env.local para desarrollo).')
 }
 
 export const client = new Client()
