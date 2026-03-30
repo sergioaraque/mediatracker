@@ -50,6 +50,9 @@
       <button @click.stop="cycleStatus" class="row-action" :class="cycleClass">
         <component :is="nextStatusIcon" class="w-3.5 h-3.5" />
       </button>
+      <button v-if="media.status === 'watching'" @click.stop="dropMedia" class="row-action text-red-400/60 hover:text-red-400 hover:bg-red-500/10" title="Abandonar">
+        <XCircle class="w-3.5 h-3.5" />
+      </button>
       <button @click.stop="$emit('delete', media.$id)" class="row-action text-red-400/70 hover:text-red-400 hover:bg-red-500/10">
         <Trash2 class="w-3.5 h-3.5" />
       </button>
@@ -59,7 +62,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Star, Pencil, Trash2, Film, Tv, BookOpen, Eye, CheckCheck, RotateCcw } from 'lucide-vue-next'
+import { Star, Pencil, Trash2, Film, Tv, BookOpen, Eye, CheckCheck, RotateCcw, XCircle } from 'lucide-vue-next'
 import { useMediaStore } from '@/stores/media'
 import type { Media } from '@/types'
 
@@ -79,23 +82,29 @@ const rowBorder = computed(() => ({
   watching: 'border-blue-500/15 hover:border-blue-500/30',
   pending:  'border-white/5 hover:border-white/10',
   watched:  'border-emerald-500/10 hover:border-emerald-500/25',
+  dropped:  'border-red-500/10 hover:border-red-500/25',
 }[props.media.status]))
 
-const statusAccent    = computed(() => ({ watching: 'bg-blue-400', pending: 'bg-amber-400/50', watched: 'bg-emerald-400' }[props.media.status]))
-const statusLabel     = computed(() => ({ watching: 'Viendo', pending: 'Pendiente', watched: 'Visto' }[props.media.status]))
-const statusTextClass = computed(() => ({ watching: 'text-blue-300', pending: 'text-amber-300', watched: 'text-emerald-300' }[props.media.status]))
-const statusDotClass  = computed(() => ({ watching: 'bg-blue-400', pending: 'bg-amber-400', watched: 'bg-emerald-400' }[props.media.status]))
+const statusAccent    = computed(() => ({ watching: 'bg-blue-400', pending: 'bg-amber-400/50', watched: 'bg-emerald-400', dropped: 'bg-red-400' }[props.media.status]))
+const statusLabel     = computed(() => ({ watching: 'Viendo', pending: 'Pendiente', watched: 'Visto', dropped: 'Abandonado' }[props.media.status]))
+const statusTextClass = computed(() => ({ watching: 'text-blue-300', pending: 'text-amber-300', watched: 'text-emerald-300', dropped: 'text-red-300' }[props.media.status]))
+const statusDotClass  = computed(() => ({ watching: 'bg-blue-400', pending: 'bg-amber-400', watched: 'bg-emerald-400', dropped: 'bg-red-400' }[props.media.status]))
 
-const nextState      = computed(() => ({ pending: 'watching', watching: 'watched', watched: 'pending' }[props.media.status] as Media['status']))
-const nextStatusIcon = computed(() => ({ watching: Eye, watched: CheckCheck, pending: RotateCcw }[nextState.value]))
+const nextState      = computed(() => ({ pending: 'watching', watching: 'watched', watched: 'pending', dropped: 'watching' }[props.media.status] as Media['status']))
+const nextStatusIcon = computed(() => ({ watching: Eye, watched: CheckCheck, pending: RotateCcw, dropped: RotateCcw }[nextState.value]))
 const cycleClass     = computed(() => ({
   watching: 'text-blue-300 hover:bg-blue-500/15',
   watched:  'text-emerald-300 hover:bg-emerald-500/15',
   pending:  'text-gray-300 hover:bg-white/10',
-}[nextState.value]))
+  dropped:  'text-red-300 hover:bg-red-500/15',
+}[props.media.status]))
 
 async function cycleStatus() {
   await store.cycleStatus(props.media.$id)
+}
+
+async function dropMedia() {
+  await store.setStatus(props.media.$id, 'dropped')
 }
 </script>
 

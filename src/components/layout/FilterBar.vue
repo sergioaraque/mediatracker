@@ -23,6 +23,18 @@
             </span>
           </Transition>
         </button>
+
+        <!-- Clear filters -->
+        <Transition name="avg-fade">
+          <button
+            v-if="hasActiveFilters"
+            @click="clearAllFilters"
+            class="section-tab flex items-center gap-1.5 px-3 py-2.5 rounded-2xl border font-medium text-sm transition-all duration-200 shrink-0 bg-white/4 border-white/8 text-gray-400 hover:bg-red-500/10 hover:text-red-300 hover:border-red-500/30 ml-auto"
+          >
+            <X class="w-3.5 h-3.5" />
+            <span class="text-xs">Limpiar</span>
+          </button>
+        </Transition>
       </div>
 
       <!-- ── Row 2 desktop: filters + big search ───────────────────── -->
@@ -163,7 +175,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onUnmounted } from 'vue'
-import { Search, ChevronDown, Star, LayoutGrid, List } from 'lucide-vue-next'
+import { Search, ChevronDown, Star, LayoutGrid, List, X } from 'lucide-vue-next'
 import { useMediaStore } from '@/stores/media'
 import { useUiStore }    from '@/stores/ui'
 import type { SortField, SortOrder } from '@/stores/media'
@@ -173,9 +185,10 @@ const media = useMediaStore()
 const ui    = useUiStore()
 
 const statuses = [
-  { value: 'watching', label: 'Viendo',    color: 'blue'    },
-  { value: 'pending',  label: 'Pendiente', color: 'amber'   },
-  { value: 'watched',  label: 'Visto',     color: 'emerald' },
+  { value: 'watching', label: 'Viendo',     color: 'blue'    },
+  { value: 'pending',  label: 'Pendiente',  color: 'amber'   },
+  { value: 'watched',  label: 'Visto',      color: 'emerald' },
+  { value: 'dropped',  label: 'Abandonado', color: 'red'     },
 ] as const
 
 const ratingFilters = [6, 7, 8, 9] as const
@@ -224,6 +237,21 @@ const sections = computed(() => [
     countClass:  'bg-amber-500/25 text-amber-200',
   },
 ])
+
+const hasActiveFilters = computed(() =>
+  media.filterStatus !== null ||
+  media.filterMinRating !== null ||
+  media.filterPlatform !== null ||
+  media.search !== ''
+)
+
+function clearAllFilters() {
+  media.filterStatus    = null
+  media.filterMinRating = null
+  media.filterPlatform  = null
+  media.search          = ''
+  localSearch.value     = ''
+}
 
 const localSearch = ref(media.search)
 const searchInput = ref<HTMLInputElement>()

@@ -102,13 +102,13 @@ export const useMediaStore = defineStore('media', () => {
   }
 
   async function cycleStatus(id: string) {
-    const cycle: Record<string, string> = { pending: 'watching', watching: 'watched', watched: 'pending' }
+    const cycle: Record<string, string> = { pending: 'watching', watching: 'watched', watched: 'pending', dropped: 'watching' }
     const item = all.value.find(m => m.$id === id)
     if (!item) return
     const prev = item.status
     const next = cycle[prev] as Media['status']
     const finished_at = next === 'watched' ? new Date().toISOString()
-                      : next === 'pending' ? null
+                      : next === 'pending' || next === 'watching' ? null
                       : item.finished_at
     // Optimistic update
     item.status      = next
@@ -122,6 +122,26 @@ export const useMediaStore = defineStore('media', () => {
       // Revert on failure
       item.status      = prev
       item.finished_at = prev === 'watched' ? finished_at ?? null : item.finished_at
+      throw e
+    }
+  }
+
+  async function setStatus(id: string, status: Media['status']) {
+    const item = all.value.find(m => m.$id === id)
+    if (!item) return
+    const prev = item.status
+    const finished_at = status === 'watched' ? new Date().toISOString()
+                      : status === 'pending' || status === 'watching' ? null
+                      : item.finished_at
+    item.status      = status
+    item.finished_at = finished_at ?? null
+    try {
+      await databases.updateDocument(DB_ID, COLL_MEDIA, id, { status, finished_at })
+      logStatusChange(id, prev, status)
+      if (status === 'watched') useUiStore().pendingRatingMedia = item
+    } catch (e) {
+      item.status      = prev
+      item.finished_at = item.finished_at
       throw e
     }
   }
@@ -183,6 +203,6 @@ export const useMediaStore = defineStore('media', () => {
   return {
     all, loading, filtered,
     filterType, filterStatus, filterMinRating, filterPlatform, search, sortField, sortOrder,
-    fetch, create, update, remove, cycleStatus, getProgress, getStatusHistory, checkReminders,
+    fetch, create, update, remove, cycleStatus, setStatus, getProgress, getStatusHistory, checkReminders,
   }
 })

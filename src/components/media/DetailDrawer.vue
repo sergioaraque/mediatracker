@@ -248,7 +248,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { X, Pencil, Star, Trash2, Eye, Clock, CheckCheck, History, Bell, Youtube, Play } from 'lucide-vue-next'
+import { X, Pencil, Star, Trash2, Eye, Clock, CheckCheck, History, Bell, Youtube, Play, RotateCcw } from 'lucide-vue-next'
 import { useMediaStore } from '@/stores/media'
 import { useUiStore } from '@/stores/ui'
 import type { Media, Progress, StatusHistory } from '@/types'
@@ -312,13 +312,14 @@ const progressPercent = computed(() => {
   return Math.round((progress.value.current_episode / progress.value.total_episodes) * 100)
 })
 
-const cycleIcon  = computed(() => props.media ? ({ watching: Eye, pending: Clock, watched: CheckCheck }[props.media.status]) : Eye)
-const cycleLabel = computed(() => props.media ? ({ watching: 'Marcar pendiente', pending: 'Empezar a ver', watched: 'Marcar como visto' }[props.media.status]) : '')
+const cycleIcon  = computed(() => props.media ? ({ watching: Eye, pending: Clock, watched: CheckCheck, dropped: RotateCcw }[props.media.status] ?? Eye) : Eye)
+const cycleLabel = computed(() => props.media ? ({ watching: 'Marcar pendiente', pending: 'Empezar a ver', watched: 'Marcar como visto', dropped: 'Retomar' }[props.media.status] ?? '') : '')
 const cycleClass = computed(() => props.media ? ({
   watching: 'border-amber-500/30 text-amber-300 hover:bg-amber-500/10',
   pending:  'border-blue-500/30 text-blue-300 hover:bg-blue-500/10',
   watched:  'border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/10',
-}[props.media.status]) : '')
+  dropped:  'border-red-500/30 text-red-300 hover:bg-red-500/10',
+}[props.media.status] ?? '') : '')
 
 function close() { emit('update:modelValue', false) }
 
@@ -339,9 +340,9 @@ function formatDate(iso: string) {
 }
 
 function statusLabel(s: string) {
-  return ({ watching: 'Viendo', watched: 'Visto', pending: 'Pendiente' }[s] ?? s)
+  return ({ watching: 'Viendo', watched: 'Visto', pending: 'Pendiente', dropped: 'Abandonado' }[s] ?? s)
 }
 function statusColor(s: string) {
-  return ({ watching: 'text-blue-300', watched: 'text-emerald-300', pending: 'text-amber-300' }[s] ?? 'text-gray-300')
+  return ({ watching: 'text-blue-300', watched: 'text-emerald-300', pending: 'text-amber-300', dropped: 'text-red-300' }[s] ?? 'text-gray-300')
 }
 </script>

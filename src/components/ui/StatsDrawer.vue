@@ -31,9 +31,10 @@
           <div>
             <SectionTitle>Por estado</SectionTitle>
             <div class="space-y-3">
-              <StatusRow label="Visto"     :count="byStatus.watched"  :total="total" dot="bg-emerald-400" bar="bg-emerald-500" />
+              <StatusRow label="Visto"      :count="byStatus.watched"  :total="total" dot="bg-emerald-400" bar="bg-emerald-500" />
               <StatusRow label="Viendo"    :count="byStatus.watching" :total="total" dot="bg-blue-400"    bar="bg-blue-500" />
               <StatusRow label="Pendiente" :count="byStatus.pending"  :total="total" dot="bg-amber-400"   bar="bg-amber-500" />
+              <StatusRow v-if="byStatus.dropped" label="Abandonado" :count="byStatus.dropped" :total="total" dot="bg-red-400" bar="bg-red-500" />
             </div>
           </div>
 
@@ -109,11 +110,12 @@
                 <span
                   class="shrink-0 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full"
                   :class="{
-                    'bg-blue-500/10 text-blue-300':    item.status === 'watching',
-                    'bg-amber-500/10 text-amber-300':  item.status === 'pending',
+                    'bg-blue-500/10 text-blue-300':       item.status === 'watching',
+                    'bg-amber-500/10 text-amber-300':     item.status === 'pending',
                     'bg-emerald-500/10 text-emerald-300': item.status === 'watched',
+                    'bg-red-500/10 text-red-300':         item.status === 'dropped',
                   }"
-                >{{ item.status === 'watching' ? 'Viendo' : item.status === 'watched' ? 'Visto' : 'Pendiente' }}</span>
+                >{{ { watching: 'Viendo', watched: 'Visto', pending: 'Pendiente', dropped: 'Abandonado' }[item.status] }}</span>
               </div>
             </div>
           </div>
@@ -208,6 +210,7 @@ const byStatus = computed(() => ({
   watched:  media.all.filter(m => m.status === 'watched').length,
   watching: media.all.filter(m => m.status === 'watching').length,
   pending:  media.all.filter(m => m.status === 'pending').length,
+  dropped:  media.all.filter(m => m.status === 'dropped').length,
 }))
 
 const completionPct = computed(() =>

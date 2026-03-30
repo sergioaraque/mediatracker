@@ -112,6 +112,9 @@
       @delete="handleDelete"
     />
 
+    <!-- Command palette -->
+    <CommandPalette v-model="showCommandPalette" @detail="openDetail" />
+
     <!-- Delete confirm -->
     <Teleport to="body">
       <Transition name="backdrop">
@@ -146,6 +149,7 @@ import { ref, onMounted } from 'vue'
 import { Inbox, Plus, SearchX, Trash2 } from 'lucide-vue-next'
 import { useMediaStore } from '@/stores/media'
 import { useUiStore }    from '@/stores/ui'
+import { storeToRefs }   from 'pinia'
 import { useKeyboard }   from '@/composables/useKeyboard'
 import type { Media } from '@/types'
 import AppHeader          from '@/components/layout/AppHeader.vue'
@@ -160,10 +164,12 @@ import StatsDrawer           from '@/components/ui/StatsDrawer.vue'
 import RandomPickerOverlay   from '@/components/ui/RandomPickerOverlay.vue'
 import ImportDrawer           from '@/components/ui/ImportDrawer.vue'
 import CalendarDrawer         from '@/components/ui/CalendarDrawer.vue'
+import CommandPalette         from '@/components/ui/CommandPalette.vue'
 import DynamicBackground  from '@/components/layout/DynamicBackground.vue'
 
 const media = useMediaStore()
 const ui    = useUiStore()
+const { showCommandPalette } = storeToRefs(ui)
 
 const formDrawer   = ref(false)
 const detailDrawer = ref(false)
@@ -179,8 +185,9 @@ const filterBarRef = ref<InstanceType<typeof FilterBar>>()
 onMounted(() => media.fetch())
 
 useKeyboard({
-  onNew:    () => { formDrawer.value = true },
-  onSearch: () => { filterBarRef.value?.focusSearch() },
+  onNew:     () => { formDrawer.value = true },
+  onSearch:  () => { filterBarRef.value?.focusSearch() },
+  onPalette: () => { showCommandPalette.value = true },
 })
 
 function openDetail(m: Media) {

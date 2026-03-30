@@ -110,6 +110,14 @@
           <span class="action-label" :class="cycleLabelClass">{{ nextStatusLabel }}</span>
         </button>
 
+        <!-- Abandonar (only when watching) -->
+        <button v-if="media.status === 'watching'" @click.stop="dropMedia" class="action-btn group/b">
+          <div class="action-icon border-red-500/30 bg-red-500/10 text-red-400 group-hover/b:bg-red-500/25 group-hover/b:border-red-500/50">
+            <XCircle class="w-4 h-4" />
+          </div>
+          <span class="action-label text-red-400/55">Abandonar</span>
+        </button>
+
         <!-- Delete -->
         <button @click.stop="$emit('delete', media.$id)" class="action-btn group/b">
           <div class="action-icon border-red-500/30 bg-red-500/15 text-red-400 group-hover/b:bg-red-500/30 group-hover/b:border-red-500/55">
@@ -126,7 +134,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Star, Pencil, Trash2, Film, Tv, BookOpen, Eye, CheckCheck, RotateCcw } from 'lucide-vue-next'
+import { Star, Pencil, Trash2, Film, Tv, BookOpen, Eye, CheckCheck, RotateCcw, XCircle } from 'lucide-vue-next'
 import { useMediaStore } from '@/stores/media'
 import type { Media } from '@/types'
 
@@ -147,24 +155,26 @@ const cardBorder = computed(() => ({
   watching: 'bg-gray-900 border border-blue-500/25 hover:border-blue-500/50',
   pending:  'bg-gray-900 border border-white/5  hover:border-white/15',
   watched:  'bg-gray-900 border border-emerald-500/20 hover:border-emerald-500/40',
+  dropped:  'bg-gray-900 border border-red-500/20 hover:border-red-500/40',
 }[props.media.status]))
 
 const statusAccent = computed(() => ({
   watching: 'bg-blue-400',
   pending:  'bg-amber-400/50',
   watched:  'bg-emerald-400',
+  dropped:  'bg-red-400',
 }[props.media.status]))
 
 const statusLabel = computed(() => ({
-  watching: 'Viendo', pending: 'Pendiente', watched: 'Visto',
+  watching: 'Viendo', pending: 'Pendiente', watched: 'Visto', dropped: 'Abandonado',
 }[props.media.status]))
 
 const statusTextClass = computed(() => ({
-  watching: 'text-blue-300', pending: 'text-amber-300', watched: 'text-emerald-300',
+  watching: 'text-blue-300', pending: 'text-amber-300', watched: 'text-emerald-300', dropped: 'text-red-300',
 }[props.media.status]))
 
 const statusDotClass = computed(() => ({
-  watching: 'bg-blue-400', pending: 'bg-amber-400', watched: 'bg-emerald-400',
+  watching: 'bg-blue-400', pending: 'bg-amber-400', watched: 'bg-emerald-400', dropped: 'bg-red-400',
 }[props.media.status]))
 
 const PLATFORM_EMOJI: Record<string, string> = {
@@ -175,22 +185,27 @@ const PLATFORM_EMOJI: Record<string, string> = {
 const platformEmoji = computed(() => props.media.platform ? (PLATFORM_EMOJI[props.media.platform] ?? '📺') : '')
 
 const nextState = computed(() => ({
-  pending: 'watching', watching: 'watched', watched: 'pending',
-}[props.media.status] as 'watching' | 'watched' | 'pending'))
+  pending: 'watching', watching: 'watched', watched: 'pending', dropped: 'watching',
+}[props.media.status] as Media['status']))
 
-const nextStatusIcon  = computed(() => ({ watching: Eye, watched: CheckCheck, pending: RotateCcw }[nextState.value]))
-const nextStatusLabel = computed(() => ({ watching: 'Empezar', watched: 'Marcar visto', pending: 'Quitar visto' }[nextState.value]))
+const nextStatusIcon  = computed(() => ({ watching: Eye, watched: CheckCheck, pending: RotateCcw, dropped: RotateCcw }[nextState.value]))
+const nextStatusLabel = computed(() => ({ watching: 'Empezar', watched: 'Marcar visto', pending: 'Quitar visto', dropped: 'Retomar' }[props.media.status]))
 const cycleBtnClass   = computed(() => ({
   watching: 'border-blue-500/30    bg-blue-500/15    text-blue-300    group-hover/b:bg-blue-500/30    group-hover/b:border-blue-500/55',
   watched:  'border-emerald-500/30 bg-emerald-500/15 text-emerald-300 group-hover/b:bg-emerald-500/30 group-hover/b:border-emerald-500/55',
   pending:  'border-gray-500/30    bg-gray-500/15    text-gray-300    group-hover/b:bg-gray-500/30    group-hover/b:border-gray-500/55',
-}[nextState.value]))
+  dropped:  'border-red-500/30     bg-red-500/15     text-red-300     group-hover/b:bg-red-500/30     group-hover/b:border-red-500/55',
+}[props.media.status]))
 const cycleLabelClass = computed(() => ({
-  watching: 'text-blue-300/55', watched: 'text-emerald-300/55', pending: 'text-gray-300/55',
-}[nextState.value]))
+  watching: 'text-blue-300/55', watched: 'text-emerald-300/55', pending: 'text-gray-300/55', dropped: 'text-red-300/55',
+}[props.media.status]))
 
 async function cycleStatus() {
   await store.cycleStatus(props.media.$id)
+}
+
+async function dropMedia() {
+  await store.setStatus(props.media.$id, 'dropped')
 }
 </script>
 

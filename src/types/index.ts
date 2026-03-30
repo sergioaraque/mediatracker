@@ -1,5 +1,5 @@
 export type MediaType   = 'movie' | 'series' | 'book'
-export type MediaStatus = 'watched' | 'watching' | 'pending'
+export type MediaStatus = 'watched' | 'watching' | 'pending' | 'dropped'
 
 export interface Media {
   $id:             string
