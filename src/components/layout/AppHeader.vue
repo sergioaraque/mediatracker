@@ -21,6 +21,14 @@
         <!-- Actions -->
         <div class="flex items-center gap-2">
           <button
+            @click="$emit('random')"
+            class="btn-ghost flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl"
+            title="¿Qué veo esta noche?"
+          >
+            <Dices class="w-4 h-4" />
+            <span class="hidden sm:inline">Aleatorio</span>
+          </button>
+          <button
             @click="$emit('stats')"
             class="btn-ghost flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl"
             title="Estadísticas"
@@ -114,14 +122,14 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { Clapperboard, Plus, LogOut, KeyRound, X, BarChart2 } from 'lucide-vue-next'
+import { Clapperboard, Plus, LogOut, KeyRound, X, BarChart2, Dices } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth'
 import { useMediaStore } from '@/stores/media'
 import { useUiStore } from '@/stores/ui'
 import { useRouter } from 'vue-router'
 import StatPill from './StatPill.vue'
 
-defineEmits<{ add: []; stats: [] }>()
+defineEmits<{ add: []; stats: []; random: [] }>()
 
 const auth   = useAuthStore()
 const media  = useMediaStore()

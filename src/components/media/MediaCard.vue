@@ -46,10 +46,19 @@
     <!-- Status accent — left edge -->
     <div class="absolute left-0 inset-y-0 w-[3px]" :class="statusAccent" />
 
-    <!-- Rating — top right -->
+    <!-- Platform — top right (above rating) -->
+    <div
+      v-if="media.platform"
+      class="absolute top-2.5 right-2.5 bg-black/65 backdrop-blur-sm rounded-full px-1.5 py-0.5 border border-white/10"
+    >
+      <span class="text-[10px] font-bold text-white/80 leading-none">{{ platformEmoji }}</span>
+    </div>
+
+    <!-- Rating — below platform or top-right if no platform -->
     <div
       v-if="media.rating"
-      class="absolute top-2.5 right-2.5 flex items-center gap-1 bg-black/65 backdrop-blur-sm rounded-full px-1.5 py-0.5 border border-white/10"
+      class="absolute flex items-center gap-1 bg-black/65 backdrop-blur-sm rounded-full px-1.5 py-0.5 border border-white/10"
+      :class="media.platform ? 'top-8 right-2.5' : 'top-2.5 right-2.5'"
     >
       <Star class="w-2.5 h-2.5 text-amber-400 fill-amber-400 shrink-0" />
       <span class="text-[11px] font-bold text-white leading-none">{{ media.rating }}</span>
@@ -157,6 +166,13 @@ const statusTextClass = computed(() => ({
 const statusDotClass = computed(() => ({
   watching: 'bg-blue-400', pending: 'bg-amber-400', watched: 'bg-emerald-400',
 }[props.media.status]))
+
+const PLATFORM_EMOJI: Record<string, string> = {
+  'Netflix': '🎬', 'HBO Max': '🟣', 'Prime Video': '📦', 'Disney+': '✨',
+  'Apple TV+': '🍎', 'Movistar+': '📡', 'Crunchyroll': '🍥', 'Filmin': '🎭',
+  'Mubi': '🎞️', 'YouTube': '▶️', 'Físico': '💿', 'Otro': '📌',
+}
+const platformEmoji = computed(() => props.media.platform ? (PLATFORM_EMOJI[props.media.platform] ?? '📺') : '')
 
 const nextState = computed(() => ({
   pending: 'watching', watching: 'watched', watched: 'pending',

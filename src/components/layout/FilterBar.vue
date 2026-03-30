@@ -36,6 +36,20 @@
         </button>
       </div>
 
+      <!-- Platform filter -->
+      <div class="relative shrink-0">
+        <select
+          :value="media.filterPlatform ?? ''"
+          @change="e => media.filterPlatform = (e.target as HTMLSelectElement).value || null"
+          class="input text-sm py-1.5 pr-8 appearance-none cursor-pointer"
+          :class="media.filterPlatform ? 'border-violet-500/40 text-white' : 'text-gray-400'"
+        >
+          <option value="">Plataforma</option>
+          <option v-for="p in PLATFORMS" :key="p" :value="p">{{ p }}</option>
+        </select>
+        <ChevronDown class="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+      </div>
+
       <!-- Spacer -->
       <div class="flex-1" />
 
@@ -113,6 +127,11 @@ const statuses = [
 ] as const
 
 const ratingFilters = [6, 7, 8, 9] as const
+
+const PLATFORMS = [
+  'Netflix', 'HBO Max', 'Prime Video', 'Disney+', 'Apple TV+',
+  'Movistar+', 'Crunchyroll', 'Filmin', 'Mubi', 'YouTube', 'Físico', 'Otro',
+]
 
 const localSearch  = ref(media.search)
 const searchInput  = ref<HTMLInputElement>()

@@ -16,6 +16,7 @@ export interface Media {
   current_season:  number | null
   current_episode: number | null
   finished_at:     string | null
+  platform:        string | null
 }
 
 export interface Progress {
@@ -42,4 +43,5 @@ export interface MediaFormData {
   total_seasons:   number | null
   total_episodes:  number | null
   progress_notes:  string | null
+  platform:        string | null
 }

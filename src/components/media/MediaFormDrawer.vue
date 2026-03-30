@@ -147,10 +147,22 @@
                 </div>
               </div>
 
-              <!-- Genre -->
-              <div>
-                <label class="label">Género</label>
-                <input v-model="form.genre" type="text" class="input" placeholder="ej. Sci-Fi, Drama…" />
+              <!-- Genre + Platform -->
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="label">Género</label>
+                  <input v-model="form.genre" type="text" class="input" placeholder="ej. Sci-Fi, Drama…" />
+                </div>
+                <div>
+                  <label class="label">Plataforma</label>
+                  <div class="relative">
+                    <select v-model="form.platform" class="input appearance-none pr-8">
+                      <option :value="null">—</option>
+                      <option v-for="p in PLATFORMS" :key="p.value" :value="p.value">{{ p.label }}</option>
+                    </select>
+                    <ChevronDown class="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                  </div>
+                </div>
               </div>
 
               <!-- Cover URL -->
@@ -243,7 +255,7 @@ const currentYear = new Date().getFullYear()
 
 const blank = (): MediaFormData => ({
   title: '', type: 'movie', status: 'pending', year: null, genre: null,
-  cover_url: null, rating: null, description: null,
+  cover_url: null, rating: null, description: null, platform: null,
   current_season: null, current_episode: null,
   total_seasons: null, total_episodes: null, progress_notes: null,
 })
@@ -282,6 +294,22 @@ const previewGradient = computed(() => ({
   series: 'bg-gradient-to-br from-violet-900 to-violet-800',
   book:   'bg-gradient-to-br from-amber-900 to-amber-800',
 }[form.value.type]))
+
+/* ── Platforms ────────────────────────────────────────────── */
+const PLATFORMS = [
+  { value: 'Netflix',      label: '🎬 Netflix' },
+  { value: 'HBO Max',      label: '🟣 HBO Max' },
+  { value: 'Prime Video',  label: '📦 Prime Video' },
+  { value: 'Disney+',      label: '✨ Disney+' },
+  { value: 'Apple TV+',    label: '🍎 Apple TV+' },
+  { value: 'Movistar+',    label: '📡 Movistar+' },
+  { value: 'Crunchyroll',  label: '🍥 Crunchyroll' },
+  { value: 'Filmin',       label: '🎭 Filmin' },
+  { value: 'Mubi',         label: '🎞️ Mubi' },
+  { value: 'YouTube',      label: '▶️ YouTube' },
+  { value: 'Físico',       label: '💿 Físico' },
+  { value: 'Otro',         label: '📌 Otro' },
+]
 
 /* ── Autocomplete ──────────────────────────────────────────── */
 const TMDB_KEY  = import.meta.env.VITE_TMDB_API_KEY ?? ''

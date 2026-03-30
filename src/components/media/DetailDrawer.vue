@@ -58,6 +58,15 @@
             <p class="text-gray-300 text-sm leading-relaxed">{{ media.description }}</p>
           </div>
 
+          <!-- Platform -->
+          <div v-if="media.platform" class="flex items-center gap-2.5 bg-white/4 border border-white/8 rounded-xl px-4 py-3">
+            <span class="text-xl leading-none">{{ platformEmoji }}</span>
+            <div>
+              <p class="text-xs text-gray-500">Plataforma</p>
+              <p class="text-sm font-medium text-white mt-0.5">{{ media.platform }}</p>
+            </div>
+          </div>
+
           <!-- Series progress -->
           <div v-if="media.type === 'series'">
             <h3 class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">Progreso</h3>
@@ -90,6 +99,26 @@
                 <div class="bg-white/5 rounded-lg p-2.5">
                   <p class="text-gray-500">Episodios</p>
                   <p class="text-white font-medium">{{ progress.current_episode ?? '—' }} / {{ progress.total_episodes ?? '—' }}</p>
+                </div>
+              </div>
+
+              <!-- Season tracker -->
+              <div v-if="progress.total_seasons && progress.total_seasons > 1">
+                <p class="text-xs text-gray-500 mb-2">Temporadas</p>
+                <div class="flex flex-wrap gap-1.5">
+                  <div
+                    v-for="s in progress.total_seasons"
+                    :key="s"
+                    class="flex items-center justify-center w-7 h-7 rounded-lg text-[11px] font-bold border transition-colors"
+                    :class="s < (progress.current_season ?? 0)
+                      ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
+                      : s === (progress.current_season ?? 0)
+                        ? 'bg-violet-500/25 border-violet-500/50 text-violet-200 ring-1 ring-violet-400/30'
+                        : 'bg-white/4 border-white/10 text-gray-600'"
+                    :title="s < (progress.current_season ?? 0) ? `Temp. ${s} — Vista` : s === (progress.current_season ?? 0) ? `Temp. ${s} — En curso` : `Temp. ${s} — Pendiente`"
+                  >
+                    {{ s }}
+                  </div>
                 </div>
               </div>
 
@@ -173,6 +202,13 @@ watch(() => props.media, async (m) => {
   try { progress.value = await store.getProgress(m.$id) }
   finally { loadingProgress.value = false }
 }, { immediate: true })
+
+const PLATFORM_EMOJI: Record<string, string> = {
+  'Netflix': '🎬', 'HBO Max': '🟣', 'Prime Video': '📦', 'Disney+': '✨',
+  'Apple TV+': '🍎', 'Movistar+': '📡', 'Crunchyroll': '🍥', 'Filmin': '🎭',
+  'Mubi': '🎞️', 'YouTube': '▶️', 'Físico': '💿', 'Otro': '📌',
+}
+const platformEmoji = computed(() => props.media?.platform ? (PLATFORM_EMOJI[props.media.platform] ?? '📺') : '')
 
 const gradient = computed(() => props.media ? ({
   movie:  'bg-gradient-to-br from-blue-900 to-blue-800',
