@@ -9,7 +9,17 @@ declare global {
 const endpoint  = window.__APP_CONFIG__?.endpoint  || import.meta.env.VITE_APPWRITE_ENDPOINT  || ''
 const projectId = window.__APP_CONFIG__?.projectId || import.meta.env.VITE_APPWRITE_PROJECT_ID || ''
 
-export const client = new Client().setEndpoint(endpoint).setProject(projectId)
+if (!endpoint || !projectId) {
+  console.error(
+    '[MediaLog] Falta configuración de Appwrite.\n' +
+    '  Dev: crea src/.env.local con VITE_APPWRITE_ENDPOINT y VITE_APPWRITE_PROJECT_ID, luego reinicia Vite.\n' +
+    '  Prod: arranca el contenedor con las variables APPWRITE_ENDPOINT y APPWRITE_PROJECT_ID.'
+  )
+}
+
+export const client = new Client()
+if (endpoint)  client.setEndpoint(endpoint)
+if (projectId) client.setProject(projectId)
 
 export const account   = new Account(client)
 export const databases = new Databases(client)

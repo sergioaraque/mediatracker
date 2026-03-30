@@ -130,7 +130,10 @@ async function submit() {
     await media.fetch()
     router.push('/app')
   } catch (e: any) {
-    error.value = e?.message ?? 'Error de autenticación'
+    const msg = e?.message ?? ''
+    error.value = msg.includes('Invalid URL') || msg.includes('Failed to fetch')
+      ? 'No se puede conectar con el servidor. Revisa tu configuración de Appwrite.'
+      : msg || 'Error de autenticación'
   } finally {
     loading.value = false
   }
