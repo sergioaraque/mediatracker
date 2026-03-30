@@ -1,70 +1,78 @@
 <template>
-  <header class="sticky top-0 z-40 bg-gray-950/80 backdrop-blur-xl border-b border-white/5">
+  <header class="sticky top-0 z-40 bg-gray-950/75 backdrop-blur-2xl border-b border-white/6">
+    <!-- Bottom glow line -->
+    <div class="absolute bottom-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-violet-500/40 to-transparent pointer-events-none" />
+
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16 gap-4">
 
         <!-- Logo -->
-        <div class="flex items-center gap-2.5 shrink-0">
-          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-lg">
-            <Clapperboard class="w-4 h-4 text-white" />
+        <div class="flex items-center gap-3 shrink-0">
+          <div class="relative">
+            <div class="absolute inset-0 rounded-xl bg-violet-500/30 blur-md" />
+            <div class="relative w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-900/50">
+              <Clapperboard class="w-4.5 h-4.5 text-white" />
+            </div>
           </div>
           <span class="font-bold text-white tracking-tight hidden sm:block">MediaTracker</span>
         </div>
 
-        <!-- Stats pills -->
+        <!-- Stats pills — desktop only -->
         <div class="hidden md:flex items-center gap-2">
           <StatPill :count="counts.movie"  :avg="avgRatings.movie"  label="Películas" color="bg-blue-500/10 text-blue-300   border-blue-500/20" />
           <StatPill :count="counts.series" :avg="avgRatings.series" label="Series"    color="bg-violet-500/10 text-violet-300 border-violet-500/20" />
           <StatPill :count="counts.book"   :avg="avgRatings.book"   label="Libros"    color="bg-amber-500/10 text-amber-300  border-amber-500/20" />
         </div>
 
-        <!-- Actions -->
-        <div class="flex items-center gap-2">
+        <!-- Actions — desktop only (mobile uses BottomNav) -->
+        <div class="flex items-center gap-1.5">
           <button
             @click="$emit('import')"
-            class="btn-ghost flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl"
+            class="btn-ghost hidden lg:flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl"
             title="Importar colección"
           >
             <Upload class="w-4 h-4" />
-            <span class="hidden lg:inline">Importar</span>
+            <span>Importar</span>
           </button>
           <button
             @click="$emit('random')"
-            class="btn-ghost flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl"
+            class="btn-ghost hidden md:flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl"
             title="¿Qué veo esta noche?"
           >
             <Dices class="w-4 h-4" />
-            <span class="hidden sm:inline">Aleatorio</span>
+            <span class="hidden lg:inline">Aleatorio</span>
           </button>
           <button
             @click="$emit('calendar')"
-            class="btn-ghost flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl"
+            class="btn-ghost hidden md:flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl"
             title="Historial"
           >
             <CalendarDays class="w-4 h-4" />
-            <span class="hidden sm:inline">Historial</span>
+            <span class="hidden lg:inline">Historial</span>
           </button>
           <button
             @click="$emit('stats')"
-            class="btn-ghost flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl"
+            class="btn-ghost hidden md:flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl"
             title="Estadísticas"
           >
             <BarChart2 class="w-4 h-4" />
-            <span class="hidden sm:inline">Stats</span>
+            <span class="hidden lg:inline">Stats</span>
           </button>
+
+          <!-- Add — only on desktop; mobile uses BottomNav -->
           <button
             @click="$emit('add')"
-            class="btn-primary flex items-center gap-1.5 text-sm"
+            class="btn-primary hidden md:flex items-center gap-1.5 text-sm px-4 py-2"
           >
             <Plus class="w-4 h-4" />
-            <span class="hidden sm:inline">Añadir</span>
+            <span>Añadir</span>
           </button>
 
           <!-- User menu -->
           <div class="relative" ref="menuRef">
             <button
               @click="open = !open"
-              class="w-9 h-9 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-sm font-bold shadow-lg hover:scale-105 transition-transform"
+              class="w-9 h-9 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-violet-900/40 hover:scale-105 hover:shadow-violet-900/60 transition-all duration-200"
             >
               {{ initial }}
             </button>

@@ -5,7 +5,10 @@
     <AppHeader @add="formDrawer = true" @stats="statsDrawer = true" @random="randomDrawer = true" @import="importDrawer = true" @calendar="calendarDrawer = true" />
     <FilterBar ref="filterBarRef" />
 
-    <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+    <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 pb-28 md:pb-8">
+
+      <!-- Section banner -->
+      <SectionBanner :type="media.filterType" />
 
       <!-- Skeleton -->
       <div v-if="media.loading" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
@@ -40,31 +43,35 @@
       </div>
 
       <!-- Grid view -->
-      <div
+      <TransitionGroup
         v-else-if="ui.viewMode === 'grid'"
+        name="cards"
+        tag="div"
         class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4"
       >
         <MediaCard
-          v-for="item in media.filtered"
+          v-for="(item, i) in media.filtered"
           :key="item.$id"
           :media="item"
+          :style="{ transitionDelay: `${Math.min(i * 25, 300)}ms` }"
           @detail="openDetail"
           @edit="openEdit"
           @delete="handleDelete"
         />
-      </div>
+      </TransitionGroup>
 
       <!-- List view -->
-      <div v-else class="flex flex-col gap-1.5">
+      <TransitionGroup name="cards" tag="div" class="flex flex-col gap-1.5" v-else>
         <MediaRow
-          v-for="item in media.filtered"
+          v-for="(item, i) in media.filtered"
           :key="item.$id"
           :media="item"
+          :style="{ transitionDelay: `${Math.min(i * 20, 200)}ms` }"
           @detail="openDetail"
           @edit="openEdit"
           @delete="handleDelete"
         />
-      </div>
+      </TransitionGroup>
 
     </main>
 
@@ -86,6 +93,16 @@
 
     <!-- Calendar -->
     <CalendarDrawer v-model="calendarDrawer" />
+
+    <!-- Mobile bottom navigation -->
+    <BottomNav
+      active="library"
+      @library="() => {}"
+      @add="formDrawer = true"
+      @calendar="calendarDrawer = true"
+      @random="randomDrawer = true"
+      @stats="statsDrawer = true"
+    />
 
     <!-- Detail drawer -->
     <DetailDrawer
@@ -133,6 +150,8 @@ import { useKeyboard }   from '@/composables/useKeyboard'
 import type { Media } from '@/types'
 import AppHeader          from '@/components/layout/AppHeader.vue'
 import FilterBar          from '@/components/layout/FilterBar.vue'
+import SectionBanner      from '@/components/layout/SectionBanner.vue'
+import BottomNav          from '@/components/layout/BottomNav.vue'
 import MediaCard          from '@/components/media/MediaCard.vue'
 import MediaRow           from '@/components/media/MediaRow.vue'
 import MediaFormDrawer    from '@/components/media/MediaFormDrawer.vue'
