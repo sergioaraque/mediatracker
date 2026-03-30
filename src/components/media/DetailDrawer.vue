@@ -233,7 +233,11 @@ watch(() => props.media, async (m) => {
     try { progress.value = await store.getProgress(m.$id) }
     finally { loadingProgress.value = false }
   }
-  store.getStatusHistory(m.$id).then(h => { history.value = h }).catch(() => {})
+  const currentId = m.$id
+  store.getStatusHistory(currentId).then(h => {
+    // Only apply if the drawer still shows the same item
+    if (props.media?.$id === currentId) history.value = h
+  }).catch(() => {})
 }, { immediate: true })
 
 const PLATFORM_EMOJI: Record<string, string> = {

@@ -185,9 +185,10 @@ async function rollRandom() {
   // Small delay for the animation to feel like it's "thinking"
   await new Promise(r => setTimeout(r, 380))
 
-  const candidates = pool.value.filter(m => m.$id !== picked.value?.$id)
-  const source = candidates.length > 0 ? candidates : pool.value
-  picked.value  = source[Math.floor(Math.random() * source.length)]
+  const candidates = pool.value.length > 1
+    ? pool.value.filter(m => m.$id !== picked.value?.$id)
+    : pool.value
+  picked.value = candidates[Math.floor(Math.random() * candidates.length)]
   rolling.value = false
 }
 

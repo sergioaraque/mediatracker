@@ -22,21 +22,28 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { Download, X }   from 'lucide-vue-next'
 
 const showBanner = ref(false)
 let deferredPrompt: any = null
 
+function onBeforeInstall(e: Event) {
+  e.preventDefault()
+  deferredPrompt   = e
+  showBanner.value = true
+}
+function onAppInstalled() {
+  showBanner.value = false
+}
+
 onMounted(() => {
-  window.addEventListener('beforeinstallprompt', (e: Event) => {
-    e.preventDefault()
-    deferredPrompt  = e
-    showBanner.value = true
-  })
-  window.addEventListener('appinstalled', () => {
-    showBanner.value = false
-  })
+  window.addEventListener('beforeinstallprompt', onBeforeInstall)
+  window.addEventListener('appinstalled', onAppInstalled)
+})
+onUnmounted(() => {
+  window.removeEventListener('beforeinstallprompt', onBeforeInstall)
+  window.removeEventListener('appinstalled', onAppInstalled)
 })
 
 async function install() {

@@ -109,7 +109,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, onUnmounted } from 'vue'
 import { Search, ChevronDown, Star, LayoutGrid, List } from 'lucide-vue-next'
 import { useMediaStore } from '@/stores/media'
 import { useUiStore }    from '@/stores/ui'
@@ -150,6 +150,8 @@ function onSortChange(e: Event) {
   media.sortField = field as SortField
   media.sortOrder = order as SortOrder
 }
+
+onUnmounted(() => clearTimeout(debounceTimer))
 
 // Expose focus method for keyboard shortcut
 defineExpose({ focusSearch: () => searchInput.value?.focus() })

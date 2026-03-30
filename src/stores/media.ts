@@ -109,11 +109,18 @@ export const useMediaStore = defineStore('media', () => {
     const finished_at = next === 'watched' ? new Date().toISOString()
                       : next === 'pending' ? null
                       : item.finished_at
+    // Optimistic update
     item.status      = next
     item.finished_at = finished_at ?? null
-    await databases.updateDocument(DB_ID, COLL_MEDIA, id, { status: next, finished_at })
-    // Log history (fire-and-forget, non-blocking)
-    logStatusChange(id, prev, next)
+    try {
+      await databases.updateDocument(DB_ID, COLL_MEDIA, id, { status: next, finished_at })
+      logStatusChange(id, prev, next)
+    } catch (e) {
+      // Revert on failure
+      item.status      = prev
+      item.finished_at = prev === 'watched' ? finished_at ?? null : item.finished_at
+      throw e
+    }
   }
 
   function logStatusChange(mediaId: string, from: string, to: string) {
