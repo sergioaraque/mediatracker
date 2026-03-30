@@ -2,7 +2,7 @@
   <div class="min-h-screen text-white flex flex-col relative">
     <DynamicBackground :type="media.filterType as any" />
 
-    <AppHeader @add="formDrawer = true" @stats="statsDrawer = true" @random="randomDrawer = true" @import="importDrawer = true" />
+    <AppHeader @add="formDrawer = true" @stats="statsDrawer = true" @random="randomDrawer = true" @import="importDrawer = true" @calendar="calendarDrawer = true" />
     <FilterBar ref="filterBarRef" />
 
     <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
@@ -84,6 +84,9 @@
     <!-- Import -->
     <ImportDrawer v-model="importDrawer" />
 
+    <!-- Calendar -->
+    <CalendarDrawer v-model="calendarDrawer" />
+
     <!-- Detail drawer -->
     <DetailDrawer
       v-model="detailDrawer"
@@ -137,6 +140,7 @@ import DetailDrawer       from '@/components/media/DetailDrawer.vue'
 import StatsDrawer           from '@/components/ui/StatsDrawer.vue'
 import RandomPickerOverlay   from '@/components/ui/RandomPickerOverlay.vue'
 import ImportDrawer           from '@/components/ui/ImportDrawer.vue'
+import CalendarDrawer         from '@/components/ui/CalendarDrawer.vue'
 import DynamicBackground  from '@/components/layout/DynamicBackground.vue'
 
 const media = useMediaStore()
@@ -146,7 +150,8 @@ const formDrawer   = ref(false)
 const detailDrawer = ref(false)
 const statsDrawer  = ref(false)
 const randomDrawer = ref(false)
-const importDrawer = ref(false)
+const importDrawer  = ref(false)
+const calendarDrawer = ref(false)
 const editTarget   = ref<Media | null>(null)
 const detailTarget = ref<Media | null>(null)
 const deleteTarget = ref<string | null>(null)

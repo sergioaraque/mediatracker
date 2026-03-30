@@ -13,9 +13,9 @@
 
         <!-- Stats pills -->
         <div class="hidden md:flex items-center gap-2">
-          <StatPill :count="counts.movie"   label="Películas" color="bg-blue-500/10 text-blue-300   border-blue-500/20" />
-          <StatPill :count="counts.series"  label="Series"    color="bg-violet-500/10 text-violet-300 border-violet-500/20" />
-          <StatPill :count="counts.book"    label="Libros"    color="bg-amber-500/10 text-amber-300  border-amber-500/20" />
+          <StatPill :count="counts.movie"  :avg="avgRatings.movie"  label="Películas" color="bg-blue-500/10 text-blue-300   border-blue-500/20" />
+          <StatPill :count="counts.series" :avg="avgRatings.series" label="Series"    color="bg-violet-500/10 text-violet-300 border-violet-500/20" />
+          <StatPill :count="counts.book"   :avg="avgRatings.book"   label="Libros"    color="bg-amber-500/10 text-amber-300  border-amber-500/20" />
         </div>
 
         <!-- Actions -->
@@ -35,6 +35,14 @@
           >
             <Dices class="w-4 h-4" />
             <span class="hidden sm:inline">Aleatorio</span>
+          </button>
+          <button
+            @click="$emit('calendar')"
+            class="btn-ghost flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl"
+            title="Historial"
+          >
+            <CalendarDays class="w-4 h-4" />
+            <span class="hidden sm:inline">Historial</span>
           </button>
           <button
             @click="$emit('stats')"
@@ -130,14 +138,14 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { Clapperboard, Plus, LogOut, KeyRound, X, BarChart2, Dices, Upload } from 'lucide-vue-next'
+import { Clapperboard, Plus, LogOut, KeyRound, X, BarChart2, Dices, Upload, CalendarDays } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth'
 import { useMediaStore } from '@/stores/media'
 import { useUiStore } from '@/stores/ui'
 import { useRouter } from 'vue-router'
 import StatPill from './StatPill.vue'
 
-defineEmits<{ add: []; stats: []; random: []; import: [] }>()
+defineEmits<{ add: []; stats: []; random: []; import: []; calendar: [] }>()
 
 const auth   = useAuthStore()
 const media  = useMediaStore()
@@ -158,6 +166,15 @@ const counts = computed(() => ({
   series: media.all.filter(m => m.type === 'series').length,
   book:   media.all.filter(m => m.type === 'book').length,
 }))
+
+const avgRatings = computed(() => {
+  const calc = (type: string) => {
+    const rated = media.all.filter(m => m.type === type && m.rating)
+    if (!rated.length) return null
+    return (rated.reduce((s, m) => s + (m.rating ?? 0), 0) / rated.length).toFixed(1)
+  }
+  return { movie: calc('movie'), series: calc('series'), book: calc('book') }
+})
 
 function onClickOutside(e: MouseEvent) {
   if (menuRef.value && !menuRef.value.contains(e.target as Node)) open.value = false
