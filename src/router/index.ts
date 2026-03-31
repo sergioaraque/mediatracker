@@ -13,11 +13,12 @@ const router = createRouter({
 router.beforeEach(async (to) => {
   const auth = useAuthStore()
 
-  // Esperar a que la sesión se resuelva
+  // Esperar a que la sesión se resuelva (máx. 5 s por si acaso)
   if (auth.loading) {
     await new Promise<void>(resolve => {
-      const unwatch = setInterval(() => {
-        if (!auth.loading) { clearInterval(unwatch); resolve() }
+      const timeout  = setTimeout(resolve, 5000)
+      const interval = setInterval(() => {
+        if (!auth.loading) { clearInterval(interval); clearTimeout(timeout); resolve() }
       }, 50)
     })
   }

@@ -151,11 +151,11 @@ async function save() {
       item.review = review.value.trim() || null
     }
     ui.toast('Valoración guardada')
+    close()
   } catch {
     ui.toast('Error al guardar la valoración', 'error')
   } finally {
     saving.value = false
-    close()
   }
 }
 

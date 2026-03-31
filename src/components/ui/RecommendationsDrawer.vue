@@ -156,21 +156,24 @@ async function addToCollection(item: TmdbRecommendation) {
   adding.value = new Set([...adding.value, item.id])
   try {
     await store.create({
-      title:       tmdbDisplayTitle(item),
-      type:        props.media.type as 'movie' | 'series',
-      status:      'pending',
-      cover_url:   tmdbPoster(item.poster_path, 'w500') || null,
-      year:        tmdbYear(item),
-      description: item.overview || null,
-      genre:       null,
-      platform:    null,
-      rating:      null,
-      review:      null,
-      trailer_url: null,
-      remind_at:   null,
-      current_season:   null,
-      current_episode:  null,
-    } as any)
+      title:           tmdbDisplayTitle(item),
+      type:            props.media.type as 'movie' | 'series',
+      status:          'pending',
+      cover_url:       tmdbPoster(item.poster_path, 'w500') || null,
+      year:            tmdbYear(item),
+      description:     item.overview || null,
+      genre:           null,
+      platform:        null,
+      rating:          null,
+      review:          null,
+      trailer_url:     null,
+      remind_at:       null,
+      current_season:  null,
+      current_episode: null,
+      total_seasons:   null,
+      total_episodes:  null,
+      progress_notes:  null,
+    })
     added.value = new Set([...added.value, item.id])
     ui.toast(`"${tmdbDisplayTitle(item)}" añadido a pendientes`)
   } catch {

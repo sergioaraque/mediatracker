@@ -1,15 +1,13 @@
 <template>
   <Teleport to="body">
     <Transition name="backdrop">
-      <div v-if="modelValue" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50" @click="close" />
-    </Transition>
-
-    <Transition name="drawer">
-      <div
-        v-if="modelValue"
-        class="fixed inset-y-0 right-0 w-full max-w-lg bg-gray-900 border-l border-white/10 z-50 flex flex-col"
-        @click.stop
-      >
+      <div v-if="modelValue" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click="close">
+        <Transition name="modal">
+          <div
+            v-if="modelValue"
+            class="w-full max-w-2xl max-h-[92vh] bg-gray-900 border border-white/10 rounded-2xl shadow-2xl shadow-black/60 flex flex-col"
+            @click.stop
+          >
         <!-- Header -->
         <div class="flex items-center justify-between px-6 py-4 border-b border-white/5 shrink-0">
           <h2 class="text-lg font-semibold text-white">{{ editId ? 'Editar' : 'Añadir' }} elemento</h2>
@@ -209,7 +207,7 @@
                 </div>
                 <input
                   :value="form.remind_at ? form.remind_at.slice(0, 16) : ''"
-                  @change="e => { form.remind_at = (e.target as HTMLInputElement).value ? new Date((e.target as HTMLInputElement).value).toISOString() : null; requestNotifPermission() }"
+                  @change="async (e) => { form.remind_at = (e.target as HTMLInputElement).value ? new Date((e.target as HTMLInputElement).value).toISOString() : null; await requestNotifPermission() }"
                   type="datetime-local"
                   class="input text-sm"
                   :min="minDateTime"
@@ -265,6 +263,8 @@
           </button>
         </div>
 
+          </div>
+        </Transition>
       </div>
     </Transition>
   </Teleport>
@@ -310,6 +310,7 @@ watch(() => props.modelValue, (open) => {
     return
   }
   imgError.value = false
+  notifGranted.value = Notification.permission === 'granted'
   if (props.editMedia) {
     const clean = Object.fromEntries(
       Object.entries(props.editMedia).filter(([k]) => !k.startsWith('$'))
@@ -466,6 +467,10 @@ async function submit() {
 </script>
 
 <style scoped>
+.modal-enter-active { transition: opacity .2s ease, transform .2s cubic-bezier(.34,1.56,.64,1); }
+.modal-leave-active { transition: opacity .15s ease, transform .15s ease; }
+.modal-enter-from, .modal-leave-to { opacity: 0; transform: scale(.96) translateY(10px); }
+
 .fade-enter-active, .fade-leave-active { transition: all .2s ease; }
 .fade-enter-from, .fade-leave-to       { opacity: 0; transform: translateY(-.5rem); }
 </style>

@@ -225,7 +225,26 @@
 
         <!-- Footer actions -->
         <div class="px-6 py-4 border-t border-white/5 shrink-0 flex gap-2">
+
+          <!-- Watched: two distinct actions -->
+          <template v-if="media.status === 'watched'">
+            <button
+              @click="cycleStatus"
+              class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium border border-gray-500/30 text-gray-300 hover:bg-gray-500/10 transition-all duration-150"
+            >
+              <RotateCcw class="w-4 h-4" /> Quitar visto
+            </button>
+            <button
+              @click="rewatchMedia"
+              class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium border border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/10 transition-all duration-150"
+            >
+              <RefreshCw class="w-4 h-4" /> Volver a ver
+            </button>
+          </template>
+
+          <!-- Other states: single cycle button -->
           <button
+            v-else
             @click="cycleStatus"
             class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium border transition-all duration-150"
             :class="cycleClass"
@@ -233,6 +252,7 @@
             <component :is="cycleIcon" class="w-4 h-4" />
             {{ cycleLabel }}
           </button>
+
           <button
             v-if="media.type !== 'book'"
             @click="showRecs = true"
@@ -258,7 +278,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { X, Pencil, Star, Trash2, Eye, Clock, CheckCheck, History, Bell, Youtube, Play, RotateCcw, Sparkles } from 'lucide-vue-next'
+import { X, Pencil, Star, Trash2, Eye, Clock, CheckCheck, History, Bell, Youtube, Play, RotateCcw, Sparkles, RefreshCw } from 'lucide-vue-next'
 import { useMediaStore } from '@/stores/media'
 import { useUiStore } from '@/stores/ui'
 import type { Media, Progress, StatusHistory } from '@/types'
@@ -294,7 +314,7 @@ watch(() => props.media, async (m) => {
   store.getStatusHistory(currentId).then(h => {
     // Only apply if the drawer still shows the same item
     if (props.media?.$id === currentId) history.value = h
-  }).catch(() => {})
+  }).catch((e) => console.warn('[DetailDrawer] getStatusHistory failed:', e))
 }, { immediate: true })
 
 const trailerPlaying = ref(false)
@@ -340,6 +360,12 @@ async function cycleStatus() {
   if (!props.media) return
   await store.cycleStatus(props.media.$id)
   ui.toast('Estado actualizado')
+}
+
+async function rewatchMedia() {
+  if (!props.media) return
+  await store.rewatch(props.media.$id)
+  ui.toast('¡A verla de nuevo!')
 }
 
 function confirmDelete() {

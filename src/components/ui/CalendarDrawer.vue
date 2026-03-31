@@ -146,12 +146,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { X, CalendarDays, ChevronLeft, ChevronRight, Trophy, Star } from 'lucide-vue-next'
 import { useMediaStore } from '@/stores/media'
 import type { Media } from '@/types'
 
-defineProps<{ modelValue: boolean }>()
 defineEmits<{ 'update:modelValue': [v: boolean] }>()
 
 const media       = useMediaStore()
@@ -234,7 +233,11 @@ function getDotColor(month: number, day: number) {
   return 'bg-amber-400'
 }
 
+const props = defineProps<{ modelValue: boolean }>()
+
 const selectedDay     = ref<string | null>(null)
+
+watch(() => props.modelValue, (v) => { if (!v) selectedDay.value = null })
 const selectedDayItems = computed(() => byDay.value.get(selectedDay.value ?? '') ?? [])
 
 const formatSelectedDay = computed(() => {

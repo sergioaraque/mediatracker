@@ -47,7 +47,8 @@ export function tmdbPoster(path: string | null, size = 'w300'): string {
 export function tmdbYear(item: TmdbRecommendation): number | null {
   const raw = item.release_date ?? item.first_air_date ?? ''
   const y   = parseInt(raw.slice(0, 4))
-  return isNaN(y) ? null : y
+  if (isNaN(y) || y < 1888 || y > new Date().getFullYear() + 2) return null
+  return y
 }
 
 export function tmdbDisplayTitle(item: TmdbRecommendation): string {

@@ -85,8 +85,8 @@
       </div>
     </div>
 
-    <!-- Hover overlay + actions -->
-    <div class="absolute inset-0 bg-black/75 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-between py-4 px-3">
+    <!-- Hover overlay + actions (desktop only) -->
+    <div class="absolute inset-0 bg-black/75 opacity-0 group-hover:opacity-100 transition-opacity duration-200 hidden md:flex flex-col items-center justify-between py-4 px-3">
 
       <!-- Top: hint -->
       <p class="text-white/35 text-[10px] font-semibold uppercase tracking-widest flex items-center gap-1">

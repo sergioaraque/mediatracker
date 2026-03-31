@@ -126,6 +126,20 @@ export const useMediaStore = defineStore('media', () => {
     }
   }
 
+  async function rewatch(id: string) {
+    const item = all.value.find(m => m.$id === id)
+    if (!item) return
+    const prev = item.status
+    item.status = 'watching'
+    try {
+      await databases.updateDocument(DB_ID, COLL_MEDIA, id, { status: 'watching' })
+      logStatusChange(id, prev, 'watching')
+    } catch (e) {
+      item.status = prev
+      throw e
+    }
+  }
+
   async function setStatus(id: string, status: Media['status']) {
     const item = all.value.find(m => m.$id === id)
     if (!item) return
@@ -203,6 +217,6 @@ export const useMediaStore = defineStore('media', () => {
   return {
     all, loading, filtered,
     filterType, filterStatus, filterMinRating, filterPlatform, search, sortField, sortOrder,
-    fetch, create, update, remove, cycleStatus, setStatus, getProgress, getStatusHistory, checkReminders,
+    fetch, create, update, remove, cycleStatus, setStatus, rewatch, getProgress, getStatusHistory, checkReminders,
   }
 })
