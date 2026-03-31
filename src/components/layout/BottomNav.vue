@@ -31,12 +31,12 @@
           <span class="nav-label text-gray-600 mt-1">Añadir</span>
         </button>
 
-        <!-- Random -->
-        <button class="nav-item" @click="$emit('random')">
+        <!-- Discover -->
+        <button class="nav-item" @click="$emit('discover')">
           <div class="nav-icon-wrap text-gray-500">
-            <Dices class="w-5 h-5" />
+            <Compass class="w-5 h-5" />
           </div>
-          <span class="nav-label text-gray-600">Aleatorio</span>
+          <span class="nav-label text-gray-600">Descubrir</span>
         </button>
 
         <!-- Stats -->
@@ -53,10 +53,10 @@
 </template>
 
 <script setup lang="ts">
-import { LayoutGrid, CalendarDays, Plus, Dices, BarChart2 } from 'lucide-vue-next'
+import { LayoutGrid, CalendarDays, Plus, Compass, BarChart2 } from 'lucide-vue-next'
 
 defineProps<{ active?: string }>()
-defineEmits<{ library: []; calendar: []; add: []; random: []; stats: [] }>()
+defineEmits<{ library: []; calendar: []; add: []; discover: []; stats: [] }>()
 </script>
 
 <style scoped>

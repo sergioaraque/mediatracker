@@ -183,6 +183,23 @@
             </div>
           </div>
 
+          <!-- Watch history -->
+          <div v-if="watchHistory.length">
+            <h3 class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3 flex items-center gap-1.5">
+              <Eye class="w-3.5 h-3.5" /> Visionados ({{ watchHistory.length }})
+            </h3>
+            <div class="space-y-1.5">
+              <div
+                v-for="(entry, i) in watchHistory"
+                :key="i"
+                class="flex items-center gap-2.5 text-xs bg-white/3 rounded-lg px-3 py-2"
+              >
+                <span class="text-emerald-400 font-bold">#{{ watchHistory.length - i }}</span>
+                <span class="text-gray-300">{{ formatDate(entry.watchedAt) }}</span>
+              </div>
+            </div>
+          </div>
+
           <!-- Status history -->
           <div v-if="history.length">
             <h3 class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3 flex items-center gap-1.5">
@@ -282,6 +299,7 @@ import { X, Pencil, Star, Trash2, Eye, Clock, CheckCheck, History, Bell, Youtube
 import { useMediaStore } from '@/stores/media'
 import { useUiStore } from '@/stores/ui'
 import type { Media, Progress, StatusHistory } from '@/types'
+import { getWatchHistory, type WatchEntry } from '@/lib/watchHistory'
 import TypeBadge               from './TypeBadge.vue'
 import StatusBadge             from './StatusBadge.vue'
 import RecommendationsDrawer   from '@/components/ui/RecommendationsDrawer.vue'
@@ -300,11 +318,14 @@ const ui      = useUiStore()
 const progress        = ref<Progress | null>(null)
 const loadingProgress = ref(false)
 const history         = ref<StatusHistory[]>([])
+const watchHistory    = ref<WatchEntry[]>([])
 
 watch(() => props.media, async (m) => {
-  progress.value = null
-  history.value  = []
+  progress.value     = null
+  history.value      = []
+  watchHistory.value = []
   if (!m) return
+  watchHistory.value = getWatchHistory(m.$id)
   if (m.type === 'series') {
     loadingProgress.value = true
     try { progress.value = await store.getProgress(m.$id) }

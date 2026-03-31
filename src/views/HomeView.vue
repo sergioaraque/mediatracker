@@ -2,7 +2,7 @@
   <div class="min-h-screen text-white flex flex-col relative">
     <DynamicBackground :type="media.filterType as any" />
 
-    <AppHeader @add="formDrawer = true" @stats="statsDrawer = true" @random="randomDrawer = true" @import="importDrawer = true" @calendar="calendarDrawer = true" />
+    <AppHeader @add="formDrawer = true" @stats="statsDrawer = true" @random="randomDrawer = true" @import="importDrawer = true" @calendar="calendarDrawer = true" @discover="discoverDrawer = true" />
     <FilterBar ref="filterBarRef" />
 
     <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 pb-28 md:pb-8">
@@ -94,13 +94,16 @@
     <!-- Calendar -->
     <CalendarDrawer v-model="calendarDrawer" />
 
+    <!-- Discover drawer -->
+    <DiscoverDrawer v-model="discoverDrawer" />
+
     <!-- Mobile bottom navigation -->
     <BottomNav
       active="library"
       @library="() => {}"
       @add="formDrawer = true"
       @calendar="calendarDrawer = true"
-      @random="randomDrawer = true"
+      @discover="discoverDrawer = true"
       @stats="statsDrawer = true"
     />
 
@@ -151,6 +154,7 @@ import { useMediaStore } from '@/stores/media'
 import { useUiStore }    from '@/stores/ui'
 import { storeToRefs }   from 'pinia'
 import { useKeyboard }   from '@/composables/useKeyboard'
+import { useAchievements } from '@/composables/useAchievements'
 import type { Media } from '@/types'
 import AppHeader          from '@/components/layout/AppHeader.vue'
 import FilterBar          from '@/components/layout/FilterBar.vue'
@@ -165,22 +169,26 @@ import RandomPickerOverlay   from '@/components/ui/RandomPickerOverlay.vue'
 import ImportDrawer           from '@/components/ui/ImportDrawer.vue'
 import CalendarDrawer         from '@/components/ui/CalendarDrawer.vue'
 import CommandPalette         from '@/components/ui/CommandPalette.vue'
+import DiscoverDrawer         from '@/components/ui/DiscoverDrawer.vue'
 import DynamicBackground  from '@/components/layout/DynamicBackground.vue'
 
 const media = useMediaStore()
 const ui    = useUiStore()
 const { showCommandPalette } = storeToRefs(ui)
 
-const formDrawer   = ref(false)
-const detailDrawer = ref(false)
-const statsDrawer  = ref(false)
-const randomDrawer = ref(false)
+const formDrawer    = ref(false)
+const detailDrawer  = ref(false)
+const statsDrawer   = ref(false)
+const randomDrawer  = ref(false)
 const importDrawer  = ref(false)
-const calendarDrawer = ref(false)
+const calendarDrawer  = ref(false)
+const discoverDrawer  = ref(false)
 const editTarget   = ref<Media | null>(null)
 const detailTarget = ref<Media | null>(null)
 const deleteTarget = ref<string | null>(null)
 const filterBarRef = ref<InstanceType<typeof FilterBar>>()
+
+useAchievements()
 
 onMounted(() => media.fetch())
 

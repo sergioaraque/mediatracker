@@ -120,6 +120,30 @@
             </div>
           </div>
 
+          <!-- ── Logros ──────────────────────────────────── -->
+          <div>
+            <SectionTitle>Logros</SectionTitle>
+            <div class="grid grid-cols-1 gap-2">
+              <div
+                v-for="a in ACHIEVEMENTS"
+                :key="a.id"
+                class="flex items-center gap-3 p-3 rounded-xl border transition-colors"
+                :class="unlockedIds.has(a.id)
+                  ? 'bg-violet-500/10 border-violet-500/25'
+                  : 'bg-white/3 border-white/5 opacity-50'"
+              >
+                <span class="text-2xl leading-none shrink-0">{{ a.emoji }}</span>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-semibold text-white">{{ a.name }}</p>
+                  <p class="text-[11px] text-gray-500 truncate">{{ a.description }}</p>
+                </div>
+                <span v-if="unlockedIds.has(a.id)" class="shrink-0 text-[10px] font-bold text-violet-300 bg-violet-500/20 px-2 py-0.5 rounded-full">
+                  ✓
+                </span>
+              </div>
+            </div>
+          </div>
+
           <!-- Empty -->
           <div v-if="total === 0" class="flex flex-col items-center justify-center py-16 text-center">
             <Inbox class="w-12 h-12 text-gray-700 mb-4" />
@@ -136,6 +160,7 @@
 import { computed } from 'vue'
 import { X, BarChart2, CheckCircle2, Inbox } from 'lucide-vue-next'
 import { useMediaStore } from '@/stores/media'
+import { ACHIEVEMENTS, getUnlockedIds } from '@/composables/useAchievements'
 
 /* ── Sub-components (inline for simplicity) ──────────────── */
 import { defineComponent, h } from 'vue'
@@ -197,6 +222,8 @@ defineEmits<{ 'update:modelValue': [v: boolean] }>()
 defineProps<{ modelValue: boolean }>()
 
 const media = useMediaStore()
+
+const unlockedIds = computed(() => getUnlockedIds())
 
 const total = computed(() => media.all.length)
 

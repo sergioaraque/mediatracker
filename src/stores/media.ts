@@ -4,6 +4,7 @@ import { databases, DB_ID, COLL_MEDIA, COLL_PROGRESS, COLL_STATUS_HISTORY, Query
 import type { Media, Progress, MediaFormData, StatusHistory }  from '@/types'
 import { useAuthStore }                                        from './auth'
 import { useUiStore }                                          from './ui'
+import { addWatchEntry }                                       from '@/lib/watchHistory'
 
 export type SortField = '$createdAt' | 'title' | 'year' | 'rating'
 export type SortOrder = 'ASC' | 'DESC'
@@ -116,8 +117,10 @@ export const useMediaStore = defineStore('media', () => {
     try {
       await databases.updateDocument(DB_ID, COLL_MEDIA, id, { status: next, finished_at })
       logStatusChange(id, prev, next)
-      // Prompt rating dialog when marking as watched
-      if (next === 'watched') useUiStore().pendingRatingMedia = item
+      if (next === 'watched') {
+        addWatchEntry(id)
+        useUiStore().pendingRatingMedia = item
+      }
     } catch (e) {
       // Revert on failure
       item.status      = prev
@@ -152,7 +155,10 @@ export const useMediaStore = defineStore('media', () => {
     try {
       await databases.updateDocument(DB_ID, COLL_MEDIA, id, { status, finished_at })
       logStatusChange(id, prev, status)
-      if (status === 'watched') useUiStore().pendingRatingMedia = item
+      if (status === 'watched') {
+        addWatchEntry(id)
+        useUiStore().pendingRatingMedia = item
+      }
     } catch (e) {
       item.status      = prev
       item.finished_at = item.finished_at

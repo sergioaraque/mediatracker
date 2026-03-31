@@ -19,6 +19,11 @@ async function get<T>(path: string): Promise<T> {
   return res.json()
 }
 
+export async function fetchTrending(type: 'movie' | 'tv'): Promise<TmdbRecommendation[]> {
+  const res = await get<{ results: TmdbRecommendation[] }>(`/trending/${type}/week?`)
+  return res.results?.slice(0, 20) ?? []
+}
+
 export async function fetchRecommendations(
   title: string,
   type: 'movie' | 'series',
