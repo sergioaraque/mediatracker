@@ -61,7 +61,7 @@
       <SectionBanner :type="media.filterType" />
 
       <!-- Skeleton -->
-      <div v-if="media.loading" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+      <div v-if="media.loading" :class="gridCols">
         <div
           v-for="n in 12"
           :key="n"
@@ -97,7 +97,7 @@
         v-else-if="ui.viewMode === 'grid'"
         name="cards"
         tag="div"
-        class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4"
+        :class="gridCols"
       >
         <MediaCard
           v-for="(item, i) in media.filtered"
@@ -237,7 +237,14 @@ import DynamicBackground  from '@/components/layout/DynamicBackground.vue'
 const router = useRouter()
 const media  = useMediaStore()
 const ui     = useUiStore()
-const { showCommandPalette } = storeToRefs(ui)
+const { showCommandPalette, sidebarExpanded } = storeToRefs(ui)
+
+// Adjust grid columns based on sidebar state so cards don't get squished
+const gridCols = computed(() =>
+  sidebarExpanded.value
+    ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4'
+    : 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4'
+)
 const q = useQueue()
 const { queueIds } = q
 

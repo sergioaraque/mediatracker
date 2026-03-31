@@ -7,7 +7,7 @@
     <Transition name="drawer">
       <div
         v-if="modelValue"
-        class="fixed inset-y-0 right-0 w-full max-w-lg bg-gray-900 border-l border-white/10 z-50 flex flex-col"
+        class="fixed inset-y-0 right-0 w-full max-w-2xl bg-gray-900 border-l border-white/10 z-50 flex flex-col"
         @click.stop
       >
         <!-- Header: search input -->
@@ -21,7 +21,7 @@
               ref="inputRef"
               v-model="query"
               type="text"
-              class="w-full bg-white/6 border border-white/10 rounded-xl pl-9 pr-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500/50 focus:bg-white/8 transition-colors"
+              class="w-full bg-gray-800 border border-white/10 rounded-xl pl-9 pr-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500/50 focus:bg-gray-700 transition-colors"
               placeholder="Buscar por título…"
               @keydown.escape="close"
             />
@@ -169,11 +169,11 @@
             <div
               v-for="item in results"
               :key="`${item.id}-${item.media_type}`"
-              class="flex gap-3 p-3 rounded-xl border transition-colors"
+              class="flex gap-4 p-3 rounded-xl border transition-colors"
               :class="inCollection(item) ? 'bg-white/3 border-white/5' : 'bg-white/4 border-white/6 hover:bg-white/7 hover:border-white/10'"
             >
-              <!-- Poster -->
-              <div class="w-12 h-16 rounded-lg overflow-hidden shrink-0 border border-white/8">
+              <!-- Poster — larger -->
+              <div class="w-16 shrink-0 rounded-lg overflow-hidden border border-white/8" style="aspect-ratio:2/3">
                 <img
                   v-if="tmdbPoster(item.poster_path)"
                   :src="tmdbPoster(item.poster_path)"
@@ -181,14 +181,14 @@
                   class="w-full h-full object-cover"
                   loading="lazy"
                 />
-                <div v-else class="w-full h-full flex items-center justify-center bg-gray-800 text-lg">
+                <div v-else class="w-full h-full flex items-center justify-center bg-gray-800 text-xl">
                   {{ (item.media_type === 'tv' || activeType === 'tv') ? '📺' : '🎬' }}
                 </div>
               </div>
 
               <!-- Info -->
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-1.5 mb-0.5">
+              <div class="flex-1 min-w-0 py-0.5">
+                <div class="flex items-center gap-1.5 mb-1">
                   <span class="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded"
                     :class="(item.media_type === 'tv' || activeType === 'tv') ? 'bg-violet-500/15 text-violet-400' : 'bg-blue-500/15 text-blue-400'">
                     {{ (item.media_type === 'tv' || activeType === 'tv') ? 'Serie' : 'Película' }}
@@ -196,15 +196,15 @@
                   <span v-if="item.vote_average > 0" class="flex items-center gap-0.5 text-[11px] text-amber-400">
                     <Star class="w-2.5 h-2.5 fill-amber-400" /> {{ item.vote_average.toFixed(1) }}
                   </span>
+                  <span v-if="tmdbYear(item)" class="text-[11px] text-gray-500">{{ tmdbYear(item) }}</span>
                 </div>
-                <p class="text-sm font-semibold text-white leading-snug truncate">{{ tmdbDisplayTitle(item) }}</p>
-                <p v-if="tmdbYear(item)" class="text-[11px] text-gray-500 mt-0.5">{{ tmdbYear(item) }}</p>
-                <p v-if="item.overview" class="text-[11px] text-gray-500 leading-relaxed line-clamp-2 mt-1">{{ item.overview }}</p>
+                <p class="text-sm font-semibold text-white leading-snug mb-1">{{ tmdbDisplayTitle(item) }}</p>
+                <p v-if="item.overview" class="text-xs text-gray-500 leading-relaxed line-clamp-3">{{ item.overview }}</p>
               </div>
 
               <!-- Action -->
-              <div class="shrink-0 flex items-start pt-0.5">
-                <span v-if="inCollection(item)" class="text-[11px] text-gray-500 font-medium px-2 py-1.5">En colección</span>
+              <div class="shrink-0 flex items-center">
+                <span v-if="inCollection(item)" class="text-[11px] text-gray-500 font-medium px-2">En colección</span>
                 <span v-else-if="added.has(item.id)" class="flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-bold text-emerald-400">
                   <Check class="w-3 h-3" /> Añadido
                 </span>
@@ -212,14 +212,14 @@
                   v-else
                   @click="addItem(item)"
                   :disabled="adding.has(item.id)"
-                  class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold border transition-all duration-150"
+                  class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all duration-150"
                   :class="adding.has(item.id)
                     ? 'border-white/10 text-gray-600 cursor-not-allowed'
                     : 'border-violet-500/35 text-violet-300 hover:bg-violet-500/15 hover:border-violet-400/50'"
                 >
                   <Loader2 v-if="adding.has(item.id)" class="w-3 h-3 animate-spin" />
-                  <Plus v-else class="w-3 h-3" />
-                  {{ adding.has(item.id) ? '…' : 'Añadir' }}
+                  <Plus v-else class="w-3.5 h-3.5" />
+                  Añadir
                 </button>
               </div>
             </div>

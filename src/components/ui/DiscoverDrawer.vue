@@ -7,7 +7,7 @@
     <Transition name="drawer">
       <div
         v-if="modelValue"
-        class="fixed inset-y-0 right-0 w-full max-w-lg bg-gray-900 border-l border-white/10 z-50 flex flex-col"
+        class="fixed inset-y-0 right-0 w-full max-w-2xl bg-gray-900 border-l border-white/10 z-50 flex flex-col"
         @click.stop
       >
         <!-- Header -->
@@ -56,63 +56,59 @@
             <button @click="load" class="text-sm text-violet-400 hover:text-violet-300">Reintentar</button>
           </div>
 
-          <!-- Results -->
-          <div v-else class="p-4 space-y-2">
+          <!-- Results — poster grid -->
+          <div v-else class="p-4 grid grid-cols-3 gap-3">
             <div
               v-for="item in results"
               :key="item.id"
-              class="flex gap-3 p-3 rounded-xl border transition-colors"
-              :class="isInCollection(item)
-                ? 'bg-white/3 border-white/5 opacity-60'
-                : 'bg-white/4 border-white/6 hover:bg-white/7 hover:border-white/10'"
+              class="group relative flex flex-col rounded-xl overflow-hidden border border-white/8 bg-white/3 transition-colors"
+              :class="isInCollection(item) ? 'opacity-50' : 'hover:border-white/15'"
             >
               <!-- Poster -->
-              <div class="w-12 h-16 rounded-lg overflow-hidden shrink-0 border border-white/8">
+              <div class="relative aspect-[2/3] overflow-hidden bg-gray-800 shrink-0">
                 <img
                   v-if="tmdbPoster(item.poster_path)"
                   :src="tmdbPoster(item.poster_path)"
                   :alt="tmdbDisplayTitle(item)"
-                  class="w-full h-full object-cover"
+                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   loading="lazy"
                 />
-                <div v-else class="w-full h-full flex items-center justify-center bg-gray-800">
-                  <Film class="w-4 h-4 text-white/20" />
+                <div v-else class="w-full h-full flex items-center justify-center text-3xl">
+                  {{ activeTab === 'movie' ? '🎬' : '📺' }}
                 </div>
-              </div>
 
-              <!-- Info -->
-              <div class="flex-1 min-w-0">
-                <p class="text-sm font-semibold text-white truncate leading-snug">{{ tmdbDisplayTitle(item) }}</p>
-                <div class="flex items-center gap-2 mt-0.5 mb-1">
-                  <span v-if="tmdbYear(item)" class="text-[11px] text-gray-500">{{ tmdbYear(item) }}</span>
-                  <span v-if="item.vote_average" class="flex items-center gap-0.5 text-[11px] text-amber-400">
-                    <Star class="w-2.5 h-2.5 fill-amber-400" /> {{ item.vote_average.toFixed(1) }}
+                <!-- Rating badge -->
+                <div v-if="item.vote_average" class="absolute top-1.5 left-1.5 flex items-center gap-0.5 bg-black/70 backdrop-blur-sm px-1.5 py-0.5 rounded-md text-[10px] text-amber-400 font-bold">
+                  <Star class="w-2.5 h-2.5 fill-amber-400" />{{ item.vote_average.toFixed(1) }}
+                </div>
+
+                <!-- In collection badge -->
+                <div v-if="isInCollection(item)" class="absolute inset-0 flex items-center justify-center bg-black/50">
+                  <span class="text-[10px] font-bold text-white bg-white/20 px-2 py-1 rounded-lg">En colección</span>
+                </div>
+
+                <!-- Add overlay on hover -->
+                <div v-else class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <span v-if="added.has(item.id)" class="flex items-center gap-1 text-xs text-emerald-400 font-bold">
+                    <Check class="w-3.5 h-3.5" /> Añadido
                   </span>
+                  <button
+                    v-else
+                    @click="addItem(item)"
+                    :disabled="adding.has(item.id)"
+                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-500 hover:bg-violet-400 text-white text-xs font-bold transition-colors shadow-lg"
+                  >
+                    <Loader2 v-if="adding.has(item.id)" class="w-3 h-3 animate-spin" />
+                    <Plus v-else class="w-3 h-3" />
+                    Añadir
+                  </button>
                 </div>
-                <p v-if="item.overview" class="text-[11px] text-gray-500 leading-relaxed line-clamp-2">{{ item.overview }}</p>
               </div>
 
-              <!-- Action -->
-              <div class="shrink-0 flex items-start pt-0.5">
-                <span v-if="isInCollection(item)" class="text-[11px] text-gray-500 font-medium px-2 py-1.5">
-                  En colección
-                </span>
-                <span v-else-if="added.has(item.id)" class="flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-bold text-emerald-400">
-                  <Check class="w-3 h-3" /> Añadido
-                </span>
-                <button
-                  v-else
-                  @click="addItem(item)"
-                  :disabled="adding.has(item.id)"
-                  class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold border transition-all duration-150"
-                  :class="adding.has(item.id)
-                    ? 'border-white/10 text-gray-600 cursor-not-allowed'
-                    : 'border-violet-500/35 text-violet-300 hover:bg-violet-500/15 hover:border-violet-400/50'"
-                >
-                  <Loader2 v-if="adding.has(item.id)" class="w-3 h-3 animate-spin" />
-                  <Plus v-else class="w-3 h-3" />
-                  {{ adding.has(item.id) ? '…' : 'Añadir' }}
-                </button>
+              <!-- Title + year -->
+              <div class="p-2 flex-1">
+                <p class="text-[11px] font-semibold text-white leading-snug line-clamp-2">{{ tmdbDisplayTitle(item) }}</p>
+                <p v-if="tmdbYear(item)" class="text-[10px] text-gray-500 mt-0.5">{{ tmdbYear(item) }}</p>
               </div>
             </div>
           </div>
