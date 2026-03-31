@@ -190,6 +190,19 @@
                 <textarea v-model="form.description" class="input resize-none" rows="3" placeholder="Sinopsis o notas…" />
               </div>
 
+              <!-- Private note -->
+              <div>
+                <label class="label flex items-center gap-1.5">
+                  <Lock class="w-3 h-3 text-gray-500" /> Nota privada
+                </label>
+                <input
+                  v-model="form.private_note"
+                  type="text"
+                  class="input"
+                  placeholder="ej. Recomendada por Manolito…"
+                />
+              </div>
+
               <!-- Reminder -->
               <div class="border border-amber-500/20 rounded-xl p-4 bg-amber-500/5">
                 <div class="flex items-center justify-between mb-2">
@@ -272,7 +285,7 @@
 
 <script setup lang="ts">
 import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
-import { X, ChevronDown, Star, Tv, Loader2, Search, AlertTriangle, Bell, Youtube } from 'lucide-vue-next'
+import { X, ChevronDown, Star, Tv, Loader2, Search, AlertTriangle, Bell, Youtube, Lock } from 'lucide-vue-next'
 import { Film, BookOpen } from 'lucide-vue-next'
 import { useMediaStore } from '@/stores/media'
 import { useUiStore } from '@/stores/ui'
@@ -297,7 +310,7 @@ const currentYear = new Date().getFullYear()
 const blank = (): MediaFormData => ({
   title: '', type: 'movie', status: 'pending', year: null, genre: null,
   cover_url: null, rating: null, description: null, platform: null, remind_at: null,
-  trailer_url: null, review: null,
+  trailer_url: null, review: null, private_note: null,
   current_season: null, current_episode: null,
   total_seasons: null, total_episodes: null, progress_notes: null,
 })

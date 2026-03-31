@@ -2,10 +2,55 @@
   <div class="min-h-screen text-white flex flex-col relative">
     <DynamicBackground :type="media.filterType as any" />
 
-    <AppHeader @add="formDrawer = true" @stats="statsDrawer = true" @random="randomDrawer = true" @import="importDrawer = true" @calendar="calendarDrawer = true" @discover="discoverDrawer = true" />
+    <AppHeader
+      @add="formDrawer = true"
+      @stats="statsDrawer = true"
+      @random="randomDrawer = true"
+      @import="importDrawer = true"
+      @calendar="calendarDrawer = true"
+      @discover="discoverDrawer = true"
+      @search="searchDrawer = true"
+      @queue="queueDrawer = true"
+      @upcoming="router.push('/upcoming')"
+    />
     <FilterBar ref="filterBarRef" />
 
     <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 pb-28 md:pb-8">
+
+      <!-- Siguiente a ver banner -->
+      <Transition name="fade-down">
+        <div
+          v-if="nextInQueue"
+          class="mb-6 flex items-center gap-4 p-4 rounded-2xl bg-violet-500/10 border border-violet-500/25 hover:border-violet-400/40 transition-colors"
+        >
+          <div class="w-10 h-14 rounded-lg overflow-hidden shrink-0 border border-white/10">
+            <img v-if="nextInQueue.cover_url" :src="nextInQueue.cover_url" :alt="nextInQueue.title" class="w-full h-full object-cover" />
+            <div v-else class="w-full h-full flex items-center justify-center bg-gray-800 text-lg">
+              {{ nextInQueue.type === 'series' ? '📺' : nextInQueue.type === 'book' ? '📚' : '🎬' }}
+            </div>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-[11px] font-bold text-violet-400 uppercase tracking-wider mb-0.5">Siguiente a ver</p>
+            <p class="text-sm font-semibold text-white truncate">{{ nextInQueue.title }}</p>
+            <p v-if="nextInQueue.year" class="text-xs text-gray-500 mt-0.5">{{ nextInQueue.year }}</p>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <button
+              @click="openDetail(nextInQueue!)"
+              class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border border-violet-500/40 text-violet-300 hover:bg-violet-500/20 transition-colors"
+            >
+              Ver detalle
+            </button>
+            <button
+              @click="q.remove(nextInQueue!.$id)"
+              class="p-1.5 rounded-lg text-gray-600 hover:text-gray-400 hover:bg-white/5 transition-colors"
+              title="Saltar de la cola"
+            >
+              <X class="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      </Transition>
 
       <!-- Section banner -->
       <SectionBanner :type="media.filterType" />
@@ -97,13 +142,19 @@
     <!-- Discover drawer -->
     <DiscoverDrawer v-model="discoverDrawer" />
 
+    <!-- Search drawer -->
+    <SearchDrawer v-model="searchDrawer" />
+
+    <!-- Queue drawer -->
+    <QueueDrawer v-model="queueDrawer" />
+
     <!-- Mobile bottom navigation -->
     <BottomNav
       active="library"
       @library="() => {}"
       @add="formDrawer = true"
       @calendar="calendarDrawer = true"
-      @discover="discoverDrawer = true"
+      @search="searchDrawer = true"
       @stats="statsDrawer = true"
     />
 
@@ -148,13 +199,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { Inbox, Plus, SearchX, Trash2 } from 'lucide-vue-next'
+import { ref, computed, onMounted } from 'vue'
+import { Inbox, Plus, SearchX, Trash2, X } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
 import { useMediaStore } from '@/stores/media'
 import { useUiStore }    from '@/stores/ui'
 import { storeToRefs }   from 'pinia'
 import { useKeyboard }   from '@/composables/useKeyboard'
 import { useAchievements } from '@/composables/useAchievements'
+import { useQueue }        from '@/composables/useQueue'
 import type { Media } from '@/types'
 import AppHeader          from '@/components/layout/AppHeader.vue'
 import FilterBar          from '@/components/layout/FilterBar.vue'
@@ -170,11 +223,24 @@ import ImportDrawer           from '@/components/ui/ImportDrawer.vue'
 import CalendarDrawer         from '@/components/ui/CalendarDrawer.vue'
 import CommandPalette         from '@/components/ui/CommandPalette.vue'
 import DiscoverDrawer         from '@/components/ui/DiscoverDrawer.vue'
+import SearchDrawer           from '@/components/ui/SearchDrawer.vue'
+import QueueDrawer            from '@/components/ui/QueueDrawer.vue'
 import DynamicBackground  from '@/components/layout/DynamicBackground.vue'
 
-const media = useMediaStore()
-const ui    = useUiStore()
+const router = useRouter()
+const media  = useMediaStore()
+const ui     = useUiStore()
 const { showCommandPalette } = storeToRefs(ui)
+const q = useQueue()
+const { queueIds } = q
+
+const nextInQueue = computed(() => {
+  for (const id of queueIds.value) {
+    const item = media.all.find(m => m.$id === id && m.status === 'pending')
+    if (item) return item
+  }
+  return null
+})
 
 const formDrawer    = ref(false)
 const detailDrawer  = ref(false)
@@ -183,6 +249,8 @@ const randomDrawer  = ref(false)
 const importDrawer  = ref(false)
 const calendarDrawer  = ref(false)
 const discoverDrawer  = ref(false)
+const searchDrawer    = ref(false)
+const queueDrawer     = ref(false)
 const editTarget   = ref<Media | null>(null)
 const detailTarget = ref<Media | null>(null)
 const deleteTarget = ref<string | null>(null)
@@ -237,4 +305,8 @@ function clearFilters() {
 .scale-enter-active { transition: all .2s cubic-bezier(.34,1.56,.64,1); }
 .scale-leave-active { transition: all .15s ease-in; }
 .scale-enter-from, .scale-leave-to { opacity: 0; transform: scale(.9); }
+
+.fade-down-enter-active { transition: all .3s cubic-bezier(.34,1.56,.64,1); }
+.fade-down-leave-active { transition: all .2s ease-in; }
+.fade-down-enter-from, .fade-down-leave-to { opacity: 0; transform: translateY(-8px); }
 </style>

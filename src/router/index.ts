@@ -6,7 +6,8 @@ const router = createRouter({
   routes: [
     { path: '/',      name: 'landing', component: () => import('@/views/LandingView.vue') },
     { path: '/login', name: 'login',   component: () => import('@/views/LoginView.vue') },
-    { path: '/app',   name: 'app',     component: () => import('@/views/HomeView.vue'), meta: { requiresAuth: true } },
+    { path: '/app',      name: 'app',      component: () => import('@/views/HomeView.vue'),     meta: { requiresAuth: true } },
+    { path: '/upcoming', name: 'upcoming', component: () => import('@/views/UpcomingView.vue'), meta: { requiresAuth: true } },
   ],
 })
 

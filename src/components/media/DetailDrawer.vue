@@ -219,6 +219,15 @@
             </div>
           </div>
 
+          <!-- Private note -->
+          <div v-if="media.private_note" class="flex items-start gap-2.5 bg-gray-800/60 border border-white/8 rounded-xl px-4 py-3">
+            <Lock class="w-3.5 h-3.5 text-gray-500 shrink-0 mt-0.5" />
+            <div>
+              <p class="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-0.5">Nota privada</p>
+              <p class="text-sm text-gray-300 italic">{{ media.private_note }}</p>
+            </div>
+          </div>
+
           <!-- Meta info -->
           <div class="grid grid-cols-2 gap-3 text-xs">
             <div class="bg-white/5 rounded-xl p-3">
@@ -295,7 +304,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { X, Pencil, Star, Trash2, Eye, Clock, CheckCheck, History, Bell, Youtube, Play, RotateCcw, Sparkles, RefreshCw } from 'lucide-vue-next'
+import { X, Pencil, Star, Trash2, Eye, Clock, CheckCheck, History, Bell, Youtube, Play, RotateCcw, Sparkles, RefreshCw, Lock } from 'lucide-vue-next'
 import { useMediaStore } from '@/stores/media'
 import { useUiStore } from '@/stores/ui'
 import type { Media, Progress, StatusHistory } from '@/types'

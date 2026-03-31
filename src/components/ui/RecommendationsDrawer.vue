@@ -168,6 +168,7 @@ async function addToCollection(item: TmdbRecommendation) {
       review:          null,
       trailer_url:     null,
       remind_at:       null,
+      private_note:    null,
       current_season:  null,
       current_episode: null,
       total_seasons:   null,

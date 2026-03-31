@@ -26,6 +26,15 @@
 
         <!-- Actions — desktop only (mobile uses BottomNav) -->
         <div class="flex items-center gap-1.5">
+          <!-- Search — visible on all sizes -->
+          <button
+            @click="$emit('search')"
+            class="btn-ghost flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl"
+            title="Buscar en TMDB"
+          >
+            <Search class="w-4 h-4" />
+            <span class="hidden lg:inline">Buscar</span>
+          </button>
           <button
             @click="$emit('import')"
             class="btn-ghost hidden lg:flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl"
@@ -33,6 +42,22 @@
           >
             <Upload class="w-4 h-4" />
             <span>Importar</span>
+          </button>
+          <button
+            @click="$emit('upcoming')"
+            class="btn-ghost hidden md:flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl"
+            title="Próximos estrenos"
+          >
+            <CalendarDays class="w-4 h-4 text-rose-400" />
+            <span class="hidden lg:inline">Estrenos</span>
+          </button>
+          <button
+            @click="$emit('queue')"
+            class="btn-ghost hidden md:flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl"
+            title="Cola de reproducción"
+          >
+            <ListOrdered class="w-4 h-4" />
+            <span class="hidden lg:inline">Cola</span>
           </button>
           <button
             @click="$emit('discover')"
@@ -154,14 +179,14 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { Clapperboard, Plus, LogOut, KeyRound, X, BarChart2, Dices, Upload, CalendarDays, Compass } from 'lucide-vue-next'
+import { Clapperboard, Plus, LogOut, KeyRound, X, BarChart2, Dices, Upload, CalendarDays, Compass, Search, ListOrdered } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth'
 import { useMediaStore } from '@/stores/media'
 import { useUiStore } from '@/stores/ui'
 import { useRouter } from 'vue-router'
 import StatPill from './StatPill.vue'
 
-defineEmits<{ add: []; stats: []; random: []; import: []; calendar: []; discover: [] }>()
+defineEmits<{ add: []; stats: []; random: []; import: []; calendar: []; discover: []; search: []; queue: []; upcoming: [] }>()
 
 const auth   = useAuthStore()
 const media  = useMediaStore()

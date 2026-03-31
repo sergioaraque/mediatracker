@@ -20,6 +20,7 @@ export interface Media {
   remind_at:       string | null
   trailer_url:     string | null
   review:          string | null
+  private_note:    string | null
 }
 
 export interface StatusHistory {
@@ -59,4 +60,5 @@ export interface MediaFormData {
   remind_at:       string | null
   trailer_url:     string | null
   review:          string | null
+  private_note:    string | null
 }
