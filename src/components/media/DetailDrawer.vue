@@ -224,7 +224,7 @@
         </div>
 
         <!-- Footer actions -->
-        <div class="px-6 py-4 border-t border-white/5 shrink-0 flex gap-3">
+        <div class="px-6 py-4 border-t border-white/5 shrink-0 flex gap-2">
           <button
             @click="cycleStatus"
             class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium border transition-all duration-150"
@@ -234,8 +234,16 @@
             {{ cycleLabel }}
           </button>
           <button
+            v-if="media.type !== 'book'"
+            @click="showRecs = true"
+            class="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-medium border border-violet-500/30 text-violet-300 hover:bg-violet-500/10 transition-colors"
+            title="Recomendaciones similares"
+          >
+            <Sparkles class="w-4 h-4" />
+          </button>
+          <button
             @click="confirmDelete"
-            class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors"
+            class="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors"
           >
             <Trash2 class="w-4 h-4" />
           </button>
@@ -243,17 +251,20 @@
 
       </div>
     </Transition>
+
+    <RecommendationsDrawer v-model="showRecs" :media="media" />
   </Teleport>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { X, Pencil, Star, Trash2, Eye, Clock, CheckCheck, History, Bell, Youtube, Play, RotateCcw } from 'lucide-vue-next'
+import { X, Pencil, Star, Trash2, Eye, Clock, CheckCheck, History, Bell, Youtube, Play, RotateCcw, Sparkles } from 'lucide-vue-next'
 import { useMediaStore } from '@/stores/media'
 import { useUiStore } from '@/stores/ui'
 import type { Media, Progress, StatusHistory } from '@/types'
-import TypeBadge   from './TypeBadge.vue'
-import StatusBadge from './StatusBadge.vue'
+import TypeBadge               from './TypeBadge.vue'
+import StatusBadge             from './StatusBadge.vue'
+import RecommendationsDrawer   from '@/components/ui/RecommendationsDrawer.vue'
 
 const props = defineProps<{ modelValue: boolean; media: Media | null }>()
 const emit  = defineEmits<{
@@ -261,6 +272,8 @@ const emit  = defineEmits<{
   edit:   [m: Media]
   delete: [id: string]
 }>()
+
+const showRecs = ref(false)
 
 const store   = useMediaStore()
 const ui      = useUiStore()
@@ -312,8 +325,8 @@ const progressPercent = computed(() => {
   return Math.round((progress.value.current_episode / progress.value.total_episodes) * 100)
 })
 
-const cycleIcon  = computed(() => props.media ? ({ watching: Eye, pending: Clock, watched: CheckCheck, dropped: RotateCcw }[props.media.status] ?? Eye) : Eye)
-const cycleLabel = computed(() => props.media ? ({ watching: 'Marcar pendiente', pending: 'Empezar a ver', watched: 'Marcar como visto', dropped: 'Retomar' }[props.media.status] ?? '') : '')
+const cycleIcon  = computed(() => props.media ? ({ pending: Clock, watching: CheckCheck, watched: RotateCcw, dropped: RotateCcw }[props.media.status] ?? Eye) : Eye)
+const cycleLabel = computed(() => props.media ? ({ pending: 'Empezar a ver', watching: 'Marcar como visto', watched: 'Quitar visto', dropped: 'Retomar' }[props.media.status] ?? '') : '')
 const cycleClass = computed(() => props.media ? ({
   watching: 'border-amber-500/30 text-amber-300 hover:bg-amber-500/10',
   pending:  'border-blue-500/30 text-blue-300 hover:bg-blue-500/10',

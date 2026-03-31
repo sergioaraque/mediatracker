@@ -178,7 +178,7 @@ const nextState = computed(() => ({
 }[props.media.status] as Media['status']))
 
 const nextStatusIcon  = computed(() => ({ watching: Eye, watched: CheckCheck, pending: RotateCcw, dropped: RotateCcw }[nextState.value]))
-const nextStatusLabel = computed(() => ({ watching: 'Empezar', watched: 'Marcar visto', pending: 'Quitar visto', dropped: 'Retomar' }[props.media.status]))
+const nextStatusLabel = computed(() => ({ pending: 'Empezar', watching: 'Marcar visto', watched: 'Quitar visto', dropped: 'Retomar' }[props.media.status]))
 const primaryBtnClass = computed(() => ({
   watching: 'border-blue-500/40    bg-blue-500/20    text-blue-200    hover:bg-blue-500/35    hover:border-blue-400/60',
   watched:  'border-emerald-500/40 bg-emerald-500/20 text-emerald-200 hover:bg-emerald-500/35 hover:border-emerald-400/60',
