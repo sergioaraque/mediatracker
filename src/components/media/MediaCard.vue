@@ -86,47 +86,36 @@
     </div>
 
     <!-- Hover overlay + actions -->
-    <div class="absolute inset-0 bg-black/72 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center gap-4 p-3">
+    <div class="absolute inset-0 bg-black/75 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-between py-4 px-3">
 
-      <p class="text-white/40 text-[10px] font-semibold uppercase tracking-widest flex items-center gap-1">
+      <!-- Top: hint -->
+      <p class="text-white/35 text-[10px] font-semibold uppercase tracking-widest flex items-center gap-1">
         <Eye class="w-3 h-3" /> Ver detalle
       </p>
 
-      <div class="flex gap-2.5">
+      <!-- Center: primary action -->
+      <button
+        @click.stop="cycleStatus"
+        class="primary-action group/p flex items-center gap-2 px-5 py-2.5 rounded-2xl border transition-all duration-150"
+        :class="primaryBtnClass"
+      >
+        <component :is="nextStatusIcon" class="w-4 h-4 shrink-0" />
+        <span class="text-sm font-bold">{{ nextStatusLabel }}</span>
+      </button>
 
-        <!-- Edit -->
-        <button @click.stop="$emit('edit', media)" class="action-btn group/b">
-          <div class="action-icon border-white/20 bg-white/10 text-white group-hover/b:bg-white/25 group-hover/b:border-white/40">
-            <Pencil class="w-4 h-4" />
-          </div>
-          <span class="action-label text-white/55">Editar</span>
+      <!-- Bottom: secondary actions (icon only) -->
+      <div class="flex items-center gap-1.5">
+        <button @click.stop="$emit('edit', media)" class="sec-btn text-gray-400 hover:text-white hover:bg-white/15 border-white/10 hover:border-white/25" title="Editar">
+          <Pencil class="w-3.5 h-3.5" />
         </button>
-
-        <!-- Cycle status -->
-        <button @click.stop="cycleStatus" class="action-btn group/b">
-          <div class="action-icon" :class="cycleBtnClass">
-            <component :is="nextStatusIcon" class="w-4 h-4" />
-          </div>
-          <span class="action-label" :class="cycleLabelClass">{{ nextStatusLabel }}</span>
+        <button v-if="media.status === 'watching'" @click.stop="dropMedia" class="sec-btn text-red-400/70 hover:text-red-300 hover:bg-red-500/15 border-red-500/15 hover:border-red-500/35" title="Abandonar">
+          <XCircle class="w-3.5 h-3.5" />
         </button>
-
-        <!-- Abandonar (only when watching) -->
-        <button v-if="media.status === 'watching'" @click.stop="dropMedia" class="action-btn group/b">
-          <div class="action-icon border-red-500/30 bg-red-500/10 text-red-400 group-hover/b:bg-red-500/25 group-hover/b:border-red-500/50">
-            <XCircle class="w-4 h-4" />
-          </div>
-          <span class="action-label text-red-400/55">Abandonar</span>
+        <button @click.stop="$emit('delete', media.$id)" class="sec-btn text-red-400/70 hover:text-red-300 hover:bg-red-500/15 border-red-500/15 hover:border-red-500/35" title="Eliminar">
+          <Trash2 class="w-3.5 h-3.5" />
         </button>
-
-        <!-- Delete -->
-        <button @click.stop="$emit('delete', media.$id)" class="action-btn group/b">
-          <div class="action-icon border-red-500/30 bg-red-500/15 text-red-400 group-hover/b:bg-red-500/30 group-hover/b:border-red-500/55">
-            <Trash2 class="w-4 h-4" />
-          </div>
-          <span class="action-label text-red-400/55">Eliminar</span>
-        </button>
-
       </div>
+
     </div>
 
   </article>
@@ -190,14 +179,11 @@ const nextState = computed(() => ({
 
 const nextStatusIcon  = computed(() => ({ watching: Eye, watched: CheckCheck, pending: RotateCcw, dropped: RotateCcw }[nextState.value]))
 const nextStatusLabel = computed(() => ({ watching: 'Empezar', watched: 'Marcar visto', pending: 'Quitar visto', dropped: 'Retomar' }[props.media.status]))
-const cycleBtnClass   = computed(() => ({
-  watching: 'border-blue-500/30    bg-blue-500/15    text-blue-300    group-hover/b:bg-blue-500/30    group-hover/b:border-blue-500/55',
-  watched:  'border-emerald-500/30 bg-emerald-500/15 text-emerald-300 group-hover/b:bg-emerald-500/30 group-hover/b:border-emerald-500/55',
-  pending:  'border-gray-500/30    bg-gray-500/15    text-gray-300    group-hover/b:bg-gray-500/30    group-hover/b:border-gray-500/55',
-  dropped:  'border-red-500/30     bg-red-500/15     text-red-300     group-hover/b:bg-red-500/30     group-hover/b:border-red-500/55',
-}[props.media.status]))
-const cycleLabelClass = computed(() => ({
-  watching: 'text-blue-300/55', watched: 'text-emerald-300/55', pending: 'text-gray-300/55', dropped: 'text-red-300/55',
+const primaryBtnClass = computed(() => ({
+  watching: 'border-blue-500/40    bg-blue-500/20    text-blue-200    hover:bg-blue-500/35    hover:border-blue-400/60',
+  watched:  'border-emerald-500/40 bg-emerald-500/20 text-emerald-200 hover:bg-emerald-500/35 hover:border-emerald-400/60',
+  pending:  'border-gray-500/40    bg-gray-500/20    text-gray-200    hover:bg-gray-500/35    hover:border-gray-400/60',
+  dropped:  'border-red-500/40     bg-red-500/20     text-red-200     hover:bg-red-500/35     hover:border-red-400/60',
 }[props.media.status]))
 
 async function cycleStatus() {
@@ -210,15 +196,16 @@ async function dropMedia() {
 </script>
 
 <style scoped>
-.action-btn  { display: flex; flex-direction: column; align-items: center; gap: 5px; }
-.action-icon {
-  width: 44px; height: 44px; border-radius: 14px; border: 1px solid;
+.primary-action { backdrop-filter: blur(4px); }
+.primary-action:hover { transform: scale(1.04); }
+
+.sec-btn {
+  width: 32px; height: 32px; border-radius: 10px; border: 1px solid;
   display: flex; align-items: center; justify-content: center;
   backdrop-filter: blur(4px);
-  transition: background-color .15s, border-color .15s, transform .15s;
+  transition: background-color .15s, border-color .15s, color .15s, transform .15s;
 }
-.action-btn:hover .action-icon  { transform: scale(1.1); }
-.action-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+.sec-btn:hover { transform: scale(1.1); }
 
 /* ── Film-strip bars (movie) ─────────────────────────────── */
 .film-strip {
