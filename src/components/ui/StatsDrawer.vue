@@ -53,18 +53,29 @@
             </div>
           </div>
 
-          <!-- ── Top géneros ─────────────────────────────────── -->
+          <!-- ── Perfil de géneros ──────────────────────────── -->
           <div v-if="topGenres.length">
-            <SectionTitle>Géneros</SectionTitle>
-            <div class="flex flex-wrap gap-2">
-              <span
-                v-for="g in topGenres"
+            <SectionTitle>Perfil de géneros</SectionTitle>
+            <div class="space-y-2.5">
+              <div
+                v-for="(g, i) in topGenres"
                 :key="g.genre"
-                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-sm text-gray-300"
+                class="space-y-1"
               >
-                {{ g.genre }}
-                <span class="text-xs text-gray-500 font-bold">{{ g.count }}</span>
-              </span>
+                <div class="flex items-center justify-between text-xs">
+                  <span class="flex items-center gap-1.5 text-gray-300 font-medium">
+                    <span class="w-2 h-2 rounded-full shrink-0" :style="{ background: genreColors[i % genreColors.length] }" />
+                    {{ g.genre }}
+                  </span>
+                  <span class="text-gray-500 tabular-nums">{{ g.count }} <span class="text-gray-600">({{ g.pct }}%)</span></span>
+                </div>
+                <div class="h-1.5 rounded-full bg-white/6 overflow-hidden">
+                  <div
+                    class="h-full rounded-full transition-all duration-700"
+                    :style="{ width: g.pct + '%', background: genreColors[i % genreColors.length] }"
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
@@ -266,11 +277,22 @@ const topGenres = computed(() => {
     for (const g of m.genre.split(',').map(s => s.trim()).filter(Boolean))
       map.set(g, (map.get(g) ?? 0) + 1)
   }
-  return [...map.entries()]
+  const sorted = [...map.entries()]
     .sort(([, a], [, b]) => b - a)
-    .slice(0, 12)
-    .map(([genre, count]) => ({ genre, count }))
+    .slice(0, 10)
+  const max = sorted[0]?.[1] ?? 1
+  return sorted.map(([genre, count]) => ({
+    genre,
+    count,
+    pct: Math.round((count / max) * 100),
+  }))
 })
+
+const genreColors = [
+  '#8b5cf6', '#6366f1', '#3b82f6', '#06b6d4',
+  '#10b981', '#f59e0b', '#f97316', '#ef4444',
+  '#ec4899', '#a855f7',
+]
 
 const recentActivity = computed(() =>
   [...media.all]

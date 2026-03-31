@@ -70,6 +70,25 @@ export async function fetchSearch(query: string, type?: 'movie' | 'tv'): Promise
   return results.slice(0, 20)
 }
 
+export async function fetchDiscover(
+  type: 'movie' | 'tv',
+  opts: { genreId?: number; yearFrom?: number; yearTo?: number; minRating?: number },
+): Promise<TmdbRecommendation[]> {
+  const p = new URLSearchParams()
+  if (opts.genreId)   p.set('with_genres', String(opts.genreId))
+  if (opts.minRating) p.set('vote_average.gte', String(opts.minRating))
+  p.set('sort_by', 'vote_count.desc')
+  if (type === 'movie') {
+    if (opts.yearFrom) p.set('primary_release_date.gte', `${opts.yearFrom}-01-01`)
+    if (opts.yearTo)   p.set('primary_release_date.lte', `${opts.yearTo}-12-31`)
+  } else {
+    if (opts.yearFrom) p.set('first_air_date.gte', `${opts.yearFrom}-01-01`)
+    if (opts.yearTo)   p.set('first_air_date.lte', `${opts.yearTo}-12-31`)
+  }
+  const res = await get<{ results: TmdbRecommendation[] }>(`/discover/${type}?${p.toString()}`)
+  return res.results?.slice(0, 20) ?? []
+}
+
 export async function fetchUpcoming(): Promise<TmdbRecommendation[]> {
   const res = await get<{ results: TmdbRecommendation[] }>('/movie/upcoming?')
   return res.results?.slice(0, 20) ?? []

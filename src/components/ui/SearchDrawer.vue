@@ -10,13 +10,11 @@
         class="fixed inset-y-0 right-0 w-full max-w-lg bg-gray-900 border-l border-white/10 z-50 flex flex-col"
         @click.stop
       >
-        <!-- Header -->
+        <!-- Header: search input -->
         <div class="flex items-center gap-3 px-4 py-3 border-b border-white/8 shrink-0">
           <button @click="close" class="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/8 transition-colors shrink-0">
             <X class="w-4 h-4" />
           </button>
-
-          <!-- Search input -->
           <div class="flex-1 relative">
             <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
             <input
@@ -24,15 +22,15 @@
               v-model="query"
               type="text"
               class="w-full bg-white/6 border border-white/10 rounded-xl pl-9 pr-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500/50 focus:bg-white/8 transition-colors"
-              placeholder="Buscar películas y series…"
+              placeholder="Buscar por título…"
               @keydown.escape="close"
             />
             <Loader2 v-if="loading" class="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-violet-400 animate-spin" />
           </div>
         </div>
 
-        <!-- Type tabs -->
-        <div class="flex gap-1 px-4 pt-2.5 pb-2 shrink-0">
+        <!-- Type tabs + filter toggle -->
+        <div class="flex items-center gap-1 px-4 pt-2.5 pb-2 shrink-0">
           <button
             v-for="t in tabs" :key="t.value"
             @click="activeType = t.value"
@@ -43,17 +41,109 @@
           >
             {{ t.emoji }} {{ t.label }}
           </button>
+          <button
+            @click="showFilters = !showFilters"
+            class="flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-semibold border transition-all duration-150 relative"
+            :class="activeFiltersCount
+              ? 'bg-violet-500/20 border-violet-500/40 text-violet-200'
+              : showFilters
+                ? 'bg-white/8 border-white/15 text-white'
+                : 'bg-white/4 border-white/8 text-gray-400 hover:bg-white/8'"
+          >
+            <SlidersHorizontal class="w-3.5 h-3.5" />
+            <span v-if="activeFiltersCount" class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-violet-500 text-white text-[9px] font-bold flex items-center justify-center">
+              {{ activeFiltersCount }}
+            </span>
+          </button>
+        </div>
+
+        <!-- Filtros avanzados -->
+        <Transition name="filters">
+          <div v-if="showFilters" class="px-4 pb-3 space-y-2.5 border-b border-white/6 shrink-0 bg-white/2">
+
+            <!-- Género -->
+            <div>
+              <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1.5">Género</label>
+              <div class="relative">
+                <select v-model="filterGenre" class="w-full bg-gray-800 border border-white/10 rounded-xl px-3 py-2 text-sm text-white appearance-none focus:outline-none focus:border-violet-500/50">
+                  <option :value="null">Todos los géneros</option>
+                  <option v-for="g in GENRES" :key="g.id" :value="g.id">{{ g.label }}</option>
+                </select>
+                <ChevronDown class="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+              </div>
+            </div>
+
+            <!-- Año + Rating -->
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1.5">Año desde</label>
+                <input
+                  v-model.number="filterYearFrom"
+                  type="number"
+                  placeholder="1970"
+                  min="1888"
+                  :max="currentYear"
+                  class="w-full bg-gray-800 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/50"
+                />
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1.5">Año hasta</label>
+                <input
+                  v-model.number="filterYearTo"
+                  type="number"
+                  :placeholder="String(currentYear)"
+                  min="1888"
+                  :max="currentYear + 2"
+                  class="w-full bg-gray-800 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/50"
+                />
+              </div>
+            </div>
+
+            <!-- Min rating -->
+            <div>
+              <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1.5">Valoración TMDB mínima</label>
+              <div class="flex gap-2">
+                <button
+                  v-for="r in ratingOptions" :key="r.value"
+                  @click="filterMinRating = filterMinRating === r.value ? null : r.value"
+                  class="flex-1 py-1.5 rounded-lg text-xs font-bold border transition-all duration-150"
+                  :class="filterMinRating === r.value
+                    ? 'bg-amber-500/20 border-amber-500/40 text-amber-200'
+                    : 'bg-white/4 border-white/8 text-gray-400 hover:bg-white/8'"
+                >
+                  ★ {{ r.label }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Clear filters -->
+            <button
+              v-if="activeFiltersCount"
+              @click="clearFilters"
+              class="text-[11px] text-red-400 hover:text-red-300 transition-colors"
+            >
+              Limpiar filtros
+            </button>
+          </div>
+        </Transition>
+
+        <!-- Mode indicator when using discover (no query) -->
+        <div v-if="!query.trim() && activeFiltersCount && results.length" class="px-4 py-2 shrink-0 border-b border-white/5">
+          <p class="text-[11px] text-violet-400 flex items-center gap-1.5">
+            <Compass class="w-3 h-3" />
+            Explorando por filtros — {{ results.length }} títulos
+          </p>
         </div>
 
         <!-- Content -->
         <div class="flex-1 overflow-y-auto">
 
-          <!-- Empty / hint -->
-          <div v-if="!query.trim()" class="flex flex-col items-center justify-center py-20 gap-3 text-center px-6">
+          <!-- Empty/hint state -->
+          <div v-if="!query.trim() && !activeFiltersCount" class="flex flex-col items-center justify-center py-20 gap-3 text-center px-6">
             <div class="w-14 h-14 rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
               <Search class="w-6 h-6 text-violet-400" />
             </div>
-            <p class="text-gray-400 text-sm">Escribe al menos 2 caracteres para buscar</p>
+            <p class="text-gray-400 text-sm">Escribe un título o aplica filtros para explorar</p>
           </div>
 
           <!-- Loading skeleton -->
@@ -69,24 +159,18 @@
           </div>
 
           <!-- No results -->
-          <div v-else-if="!loading && query.trim().length >= 2 && !results.length" class="flex flex-col items-center justify-center py-16 gap-3">
+          <div v-else-if="!loading && searched && !results.length" class="flex flex-col items-center justify-center py-16 gap-3">
             <SearchX class="w-8 h-8 text-gray-600" />
-            <p class="text-sm text-gray-500">Sin resultados para "{{ query }}"</p>
+            <p class="text-sm text-gray-500">Sin resultados{{ query.trim() ? ` para "${query}"` : '' }}</p>
           </div>
 
           <!-- Results -->
           <div v-else-if="results.length" class="p-4 space-y-2">
-            <p class="text-[10px] font-bold text-gray-600 uppercase tracking-widest px-1 pb-1">
-              {{ results.length }} resultados
-            </p>
-
             <div
               v-for="item in results"
               :key="`${item.id}-${item.media_type}`"
               class="flex gap-3 p-3 rounded-xl border transition-colors"
-              :class="inCollection(item)
-                ? 'bg-white/3 border-white/5'
-                : 'bg-white/4 border-white/6 hover:bg-white/7 hover:border-white/10'"
+              :class="inCollection(item) ? 'bg-white/3 border-white/5' : 'bg-white/4 border-white/6 hover:bg-white/7 hover:border-white/10'"
             >
               <!-- Poster -->
               <div class="w-12 h-16 rounded-lg overflow-hidden shrink-0 border border-white/8">
@@ -98,7 +182,7 @@
                   loading="lazy"
                 />
                 <div v-else class="w-full h-full flex items-center justify-center bg-gray-800 text-lg">
-                  {{ item.media_type === 'tv' || (activeType === 'tv') ? '📺' : '🎬' }}
+                  {{ (item.media_type === 'tv' || activeType === 'tv') ? '📺' : '🎬' }}
                 </div>
               </div>
 
@@ -147,9 +231,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue'
-import { X, Search, SearchX, Star, Plus, Check, Loader2 } from 'lucide-vue-next'
-import { fetchSearch, tmdbPoster, tmdbYear, tmdbDisplayTitle, type TmdbRecommendation } from '@/lib/tmdb'
+import { ref, computed, watch, nextTick } from 'vue'
+import { X, Search, SearchX, Star, Plus, Check, Loader2, SlidersHorizontal, ChevronDown, Compass } from 'lucide-vue-next'
+import { fetchSearch, fetchDiscover, tmdbPoster, tmdbYear, tmdbDisplayTitle, type TmdbRecommendation } from '@/lib/tmdb'
 import { useMediaStore } from '@/stores/media'
 import { useUiStore }    from '@/stores/ui'
 
@@ -158,13 +242,53 @@ const emit  = defineEmits<{ 'update:modelValue': [v: boolean] }>()
 
 const media   = useMediaStore()
 const ui      = useUiStore()
-const inputRef = ref<HTMLInputElement>()
-const query    = ref('')
-const results  = ref<TmdbRecommendation[]>([])
-const loading  = ref(false)
-const adding   = ref(new Set<number>())
-const added    = ref(new Set<number>())
-const activeType = ref<'all' | 'movie' | 'tv'>('all')
+
+// State
+const inputRef    = ref<HTMLInputElement>()
+const query       = ref('')
+const results     = ref<TmdbRecommendation[]>([])
+const loading     = ref(false)
+const searched    = ref(false)
+const adding      = ref(new Set<number>())
+const added       = ref(new Set<number>())
+const activeType  = ref<'all' | 'movie' | 'tv'>('all')
+const showFilters = ref(false)
+
+// Filters
+const filterGenre     = ref<number | null>(null)
+const filterYearFrom  = ref<number | null>(null)
+const filterYearTo    = ref<number | null>(null)
+const filterMinRating = ref<number | null>(null)
+const currentYear     = new Date().getFullYear()
+
+const GENRES = [
+  { id: 28,    label: 'Acción' },
+  { id: 10759, label: 'Acción y aventura' },
+  { id: 12,    label: 'Aventura' },
+  { id: 16,    label: 'Animación' },
+  { id: 35,    label: 'Comedia' },
+  { id: 80,    label: 'Crimen' },
+  { id: 99,    label: 'Documental' },
+  { id: 18,    label: 'Drama' },
+  { id: 10751, label: 'Familia' },
+  { id: 14,    label: 'Fantasía' },
+  { id: 36,    label: 'Historia' },
+  { id: 27,    label: 'Terror' },
+  { id: 9648,  label: 'Misterio' },
+  { id: 10749, label: 'Romance' },
+  { id: 878,   label: 'Ciencia ficción' },
+  { id: 10765, label: 'Sci-Fi y fantasía' },
+  { id: 53,    label: 'Thriller' },
+  { id: 10752, label: 'Bélica' },
+  { id: 37,    label: 'Western' },
+]
+
+const ratingOptions = [
+  { value: 6,   label: '6+' },
+  { value: 7,   label: '7+' },
+  { value: 7.5, label: '7.5+' },
+  { value: 8,   label: '8+' },
+]
 
 const tabs = [
   { value: 'all'   as const, emoji: '🔍', label: 'Todos' },
@@ -172,45 +296,100 @@ const tabs = [
   { value: 'tv'    as const, emoji: '📺', label: 'Series' },
 ]
 
-let debounceTimer: ReturnType<typeof setTimeout>
+const activeFiltersCount = computed(() =>
+  [filterGenre.value, filterYearFrom.value, filterYearTo.value, filterMinRating.value]
+    .filter(v => v !== null).length
+)
 
+// Auto-search on query change (debounced)
+let debounceTimer: ReturnType<typeof setTimeout>
 watch(query, (q) => {
   clearTimeout(debounceTimer)
-  if (q.trim().length < 2) { results.value = []; return }
+  results.value = []
+  searched.value = false
+  if (q.trim().length < 2 && !activeFiltersCount.value) return
+  if (q.trim().length > 0 && q.trim().length < 2) return
   debounceTimer = setTimeout(() => runSearch(), 400)
 })
 
-watch(activeType, () => {
-  if (query.value.trim().length >= 2) runSearch()
+// Re-search when type or filters change
+watch([activeType, filterGenre, filterYearFrom, filterYearTo, filterMinRating], () => {
+  clearTimeout(debounceTimer)
+  const hasQuery = query.value.trim().length >= 2
+  if (hasQuery || activeFiltersCount.value) {
+    debounceTimer = setTimeout(() => runSearch(), 300)
+  }
 })
 
 watch(() => props.modelValue, async (v) => {
-  if (!v) { query.value = ''; results.value = []; return }
+  if (!v) { query.value = ''; results.value = []; searched.value = false; return }
   adding.value = new Set(); added.value = new Set()
   await nextTick()
   inputRef.value?.focus()
 })
 
 async function runSearch() {
-  loading.value = true
+  const hasQuery   = query.value.trim().length >= 2
+  const hasFilters = activeFiltersCount.value > 0
+  if (!hasQuery && !hasFilters) return
+
+  loading.value  = true
+  searched.value = false
   try {
-    const type = activeType.value === 'all' ? undefined : activeType.value
-    results.value = await fetchSearch(query.value, type)
+    if (hasQuery) {
+      // Text search + client-side genre/year/rating filter
+      const type = activeType.value === 'all' ? undefined : activeType.value
+      let res = await fetchSearch(query.value, type)
+
+      if (filterGenre.value !== null)
+        res = res.filter(r => r.genre_ids.includes(filterGenre.value!))
+      if (filterYearFrom.value !== null || filterYearTo.value !== null)
+        res = res.filter(r => {
+          const y = tmdbYear(r)
+          if (!y) return false
+          if (filterYearFrom.value && y < filterYearFrom.value) return false
+          if (filterYearTo.value   && y > filterYearTo.value)   return false
+          return true
+        })
+      if (filterMinRating.value !== null)
+        res = res.filter(r => r.vote_average >= filterMinRating.value!)
+
+      results.value = res
+    } else {
+      // Discover mode — filter-only, no text
+      const discoverType = activeType.value === 'all' ? 'movie' : activeType.value
+      results.value = await fetchDiscover(discoverType, {
+        genreId:   filterGenre.value     ?? undefined,
+        yearFrom:  filterYearFrom.value  ?? undefined,
+        yearTo:    filterYearTo.value    ?? undefined,
+        minRating: filterMinRating.value ?? undefined,
+      })
+    }
   } catch {
     results.value = []
   } finally {
-    loading.value = false
+    loading.value  = false
+    searched.value = true
   }
 }
 
+function clearFilters() {
+  filterGenre.value     = null
+  filterYearFrom.value  = null
+  filterYearTo.value    = null
+  filterMinRating.value = null
+}
+
 function inCollection(item: TmdbRecommendation): boolean {
-  const title = tmdbDisplayTitle(item).toLowerCase()
-  return media.all.some(m => m.title?.toLowerCase() === title)
+  return media.all.some(m => m.title?.toLowerCase() === tmdbDisplayTitle(item).toLowerCase())
 }
 
 async function addItem(item: TmdbRecommendation) {
   adding.value = new Set([...adding.value, item.id])
   const isTV = item.media_type === 'tv' || activeType.value === 'tv'
+  const genreLabel = filterGenre.value
+    ? (GENRES.find(g => g.id === filterGenre.value)?.label ?? null)
+    : null
   try {
     await media.create({
       title:           tmdbDisplayTitle(item),
@@ -219,7 +398,7 @@ async function addItem(item: TmdbRecommendation) {
       cover_url:       tmdbPoster(item.poster_path, 'w500') || null,
       year:            tmdbYear(item),
       description:     item.overview || null,
-      genre:           null,
+      genre:           genreLabel,
       platform:        null,
       rating:          null,
       review:          null,
@@ -243,3 +422,9 @@ async function addItem(item: TmdbRecommendation) {
 
 function close() { emit('update:modelValue', false) }
 </script>
+
+<style scoped>
+.filters-enter-active { transition: all .2s ease; }
+.filters-leave-active { transition: all .15s ease; }
+.filters-enter-from, .filters-leave-to { opacity: 0; transform: translateY(-6px); }
+</style>
