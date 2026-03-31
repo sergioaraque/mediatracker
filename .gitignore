@@ -3,3 +3,4 @@
 public/js/config.js
 dist/
 node_modules/
+.claude/
