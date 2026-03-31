@@ -1,5 +1,5 @@
 <template>
-  <div class="sticky top-16 z-30 bg-gray-950/65 backdrop-blur-2xl border-b border-white/5">
+  <div class="sticky top-16 z-30 bg-gray-950/75 backdrop-blur-md border-b border-white/5">
     <div class="max-w-7xl mx-auto">
 
       <!-- ── Row 1: Section navigation ────────────────────────────── -->

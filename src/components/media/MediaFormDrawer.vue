@@ -250,7 +250,7 @@
                       <input v-model.number="form.total_seasons" type="number" class="input" placeholder="—" min="1" />
                     </div>
                     <div>
-                      <label class="label">Total episodios</label>
+                      <label class="label">Ep. por temporada</label>
                       <input v-model.number="form.total_episodes" type="number" class="input" placeholder="—" min="1" />
                     </div>
                   </div>

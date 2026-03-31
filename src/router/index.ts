@@ -17,10 +17,11 @@ router.beforeEach(async (to) => {
   // Esperar a que la sesión se resuelva (máx. 5 s por si acaso)
   if (auth.loading) {
     await new Promise<void>(resolve => {
-      const timeout  = setTimeout(resolve, 5000)
       const interval = setInterval(() => {
         if (!auth.loading) { clearInterval(interval); clearTimeout(timeout); resolve() }
       }, 50)
+      // Timeout also clears the interval to prevent it running forever
+      const timeout = setTimeout(() => { clearInterval(interval); resolve() }, 5000)
     })
   }
 

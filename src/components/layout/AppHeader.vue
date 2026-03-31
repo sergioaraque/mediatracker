@@ -1,5 +1,5 @@
 <template>
-  <header class="sticky top-0 z-40 bg-gray-950/75 backdrop-blur-2xl border-b border-white/6">
+  <header class="sticky top-0 z-40 bg-gray-950/80 backdrop-blur-md border-b border-white/6">
     <!-- Bottom glow line -->
     <div class="absolute bottom-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-violet-500/40 to-transparent pointer-events-none" />
 

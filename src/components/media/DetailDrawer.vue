@@ -102,7 +102,7 @@
                   </div>
                 </div>
                 <div v-else class="rounded-xl overflow-hidden" style="aspect-ratio:16/9">
-                  <iframe :src="`https://www.youtube.com/embed/${youtubeId}?autoplay=1`" class="w-full h-full" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen />
+                  <iframe :src="`https://www.youtube.com/embed/${youtubeId}?autoplay=1`" class="w-full h-full" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen sandbox="allow-same-origin allow-scripts allow-presentation" title="Trailer" />
                 </div>
               </div>
 
@@ -124,46 +124,11 @@
                 <p class="text-gray-300 text-sm leading-relaxed">{{ media.description }}</p>
               </div>
 
-              <!-- Series progress -->
+              <!-- Series episode tracker -->
               <div v-if="media.type === 'series'">
-                <p class="section-label">Progreso</p>
+                <p class="section-label">Episodios</p>
                 <div v-if="loadingProgress" class="h-20 rounded-xl bg-white/5 animate-pulse" />
-                <div v-else-if="progress" class="bg-white/5 rounded-xl p-4 space-y-3">
-                  <div class="flex items-center justify-between text-sm">
-                    <span class="text-gray-300">T{{ progress.current_season ?? '—' }} · Ep {{ progress.current_episode ?? '—' }}</span>
-                    <span v-if="progress.total_episodes" class="text-gray-500 text-xs">de {{ progress.total_episodes }} ep.</span>
-                  </div>
-                  <div v-if="progressPercent !== null" class="h-1.5 rounded-full bg-white/10 overflow-hidden">
-                    <div class="h-full rounded-full bg-gradient-to-r from-violet-500 to-indigo-500 transition-all duration-500" :style="{ width: progressPercent + '%' }" />
-                  </div>
-                  <div class="grid grid-cols-2 gap-2 text-xs">
-                    <div class="bg-white/5 rounded-lg p-2.5">
-                      <p class="text-gray-500">Temporadas</p>
-                      <p class="text-white font-medium">{{ progress.current_season ?? '—' }} / {{ progress.total_seasons ?? '—' }}</p>
-                    </div>
-                    <div class="bg-white/5 rounded-lg p-2.5">
-                      <p class="text-gray-500">Episodios</p>
-                      <p class="text-white font-medium">{{ progress.current_episode ?? '—' }} / {{ progress.total_episodes ?? '—' }}</p>
-                    </div>
-                  </div>
-                  <div v-if="progress.total_seasons && progress.total_seasons > 1">
-                    <p class="text-xs text-gray-500 mb-2">Temporadas</p>
-                    <div class="flex flex-wrap gap-1.5">
-                      <div
-                        v-for="s in progress.total_seasons" :key="s"
-                        class="flex items-center justify-center w-7 h-7 rounded-lg text-[11px] font-bold border transition-colors"
-                        :class="s < (progress.current_season ?? 0)
-                          ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
-                          : s === (progress.current_season ?? 0)
-                            ? 'bg-violet-500/25 border-violet-500/50 text-violet-200 ring-1 ring-violet-400/30'
-                            : 'bg-white/4 border-white/10 text-gray-600'"
-                        :title="s < (progress.current_season ?? 0) ? `Temp. ${s} — Vista` : s === (progress.current_season ?? 0) ? `Temp. ${s} — En curso` : `Temp. ${s} — Pendiente`"
-                      >{{ s }}</div>
-                    </div>
-                  </div>
-                  <p v-if="progress.notes" class="text-gray-400 text-xs italic border-t border-white/5 pt-3">{{ progress.notes }}</p>
-                </div>
-                <p v-else class="text-gray-500 text-sm">Sin datos de progreso registrados.</p>
+                <EpisodeTracker v-else :media="media" :progress="progress" />
               </div>
 
               <!-- Reminder -->
@@ -286,6 +251,7 @@ import type { Media, Progress, StatusHistory } from '@/types'
 import { getWatchHistory, type WatchEntry } from '@/lib/watchHistory'
 import TypeBadge             from './TypeBadge.vue'
 import StatusBadge           from './StatusBadge.vue'
+import EpisodeTracker        from './EpisodeTracker.vue'
 import RecommendationsDrawer from '@/components/ui/RecommendationsDrawer.vue'
 
 const props = defineProps<{ modelValue: boolean; media: Media | null }>()
@@ -326,8 +292,10 @@ watch(() => props.media, () => { trailerPlaying.value = false })
 const youtubeId = computed(() => {
   const url = props.media?.trailer_url
   if (!url) return null
-  const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?.*?v=|embed\/|v\/))([^&?/\s]{11})/)
-  return m?.[1] ?? null
+  const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?.*?v=|embed\/|v\/))([a-zA-Z0-9_-]{11})/)
+  const id = m?.[1] ?? null
+  // Strict validation: exactly 11 alphanumeric/dash/underscore chars
+  return id && /^[a-zA-Z0-9_-]{11}$/.test(id) ? id : null
 })
 
 const PLATFORM_EMOJI: Record<string, string> = {
@@ -341,11 +309,6 @@ const gradient       = computed(() => props.media ? ({
   series: 'bg-gradient-to-br from-violet-900 to-violet-800',
   book:   'bg-gradient-to-br from-amber-900 to-amber-800',
 }[props.media.type]) : '')
-const progressPercent = computed(() => {
-  if (!progress.value?.current_episode || !progress.value?.total_episodes) return null
-  return Math.round((progress.value.current_episode / progress.value.total_episodes) * 100)
-})
-
 const cycleIcon  = computed(() => props.media ? ({ pending: Clock, watching: CheckCheck, watched: RotateCcw, dropped: RotateCcw }[props.media.status] ?? Eye) : Eye)
 const cycleLabel = computed(() => props.media ? ({ pending: 'Empezar a ver', watching: 'Marcar como visto', watched: 'Quitar visto', dropped: 'Retomar' }[props.media.status] ?? '') : '')
 const cycleClass = computed(() => props.media ? ({

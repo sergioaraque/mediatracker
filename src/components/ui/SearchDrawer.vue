@@ -231,7 +231,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, onUnmounted } from 'vue'
 import { X, Search, SearchX, Star, Plus, Check, Loader2, SlidersHorizontal, ChevronDown, Compass } from 'lucide-vue-next'
 import { fetchSearch, fetchDiscover, tmdbPoster, tmdbYear, tmdbDisplayTitle, type TmdbRecommendation } from '@/lib/tmdb'
 import { useMediaStore } from '@/stores/media'
@@ -419,6 +419,8 @@ async function addItem(item: TmdbRecommendation) {
     adding.value = new Set([...adding.value].filter(i => i !== item.id))
   }
 }
+
+onUnmounted(() => clearTimeout(debounceTimer))
 
 function close() { emit('update:modelValue', false) }
 </script>

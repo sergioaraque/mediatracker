@@ -1,6 +1,6 @@
 <template>
   <nav class="fixed bottom-0 inset-x-0 z-40 md:hidden pointer-events-none">
-    <div class="pointer-events-auto bg-gray-950/85 backdrop-blur-2xl border-t border-white/8" :style="{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }">
+    <div class="pointer-events-auto bg-gray-950/90 backdrop-blur-md border-t border-white/8" :style="{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }">
       <div class="flex items-center justify-around px-2 pt-2 pb-1">
 
         <!-- Library -->

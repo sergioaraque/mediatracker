@@ -89,7 +89,7 @@ export const useMediaStore = defineStore('media', () => {
     const { total_seasons, total_episodes, progress_notes, ...rawData } = data
     const mediaData = stripMeta(rawData as Record<string, unknown>)
     await databases.updateDocument(DB_ID, COLL_MEDIA, id, mediaData)
-    if (data.type === 'series') await upsertProgress(id, { current_season: data.current_season, current_episode: data.current_episode, total_seasons, total_episodes, notes: progress_notes })
+    if (data.type === 'series') await upsertProgress(id, { current_season: data.current_season, current_episode: data.current_episode, total_seasons, total_episodes, notes: progress_notes }, perms())
     await fetch()
   }
 
@@ -106,7 +106,8 @@ export const useMediaStore = defineStore('media', () => {
     const cycle: Record<string, string> = { pending: 'watching', watching: 'watched', watched: 'pending', dropped: 'watching' }
     const item = all.value.find(m => m.$id === id)
     if (!item) return
-    const prev = item.status
+    const prev           = item.status
+    const prevFinishedAt = item.finished_at          // save before mutation
     const next = cycle[prev] as Media['status']
     const finished_at = next === 'watched' ? new Date().toISOString()
                       : next === 'pending' || next === 'watching' ? null
@@ -122,9 +123,9 @@ export const useMediaStore = defineStore('media', () => {
         useUiStore().pendingRatingMedia = item
       }
     } catch (e) {
-      // Revert on failure
+      // Revert to original values on failure
       item.status      = prev
-      item.finished_at = prev === 'watched' ? finished_at ?? null : item.finished_at
+      item.finished_at = prevFinishedAt
       throw e
     }
   }

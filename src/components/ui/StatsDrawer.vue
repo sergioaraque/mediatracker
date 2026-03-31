@@ -99,6 +99,106 @@
             </div>
           </div>
 
+          <!-- ── Resumen por año ────────────────────────────── -->
+          <div v-if="availableYears.length > 0">
+            <SectionTitle>Resumen por año</SectionTitle>
+
+            <!-- Year selector -->
+            <div class="flex flex-wrap gap-1.5 mb-4">
+              <button
+                v-for="year in availableYears"
+                :key="year"
+                @click="selectedYear = selectedYear === year ? null : year"
+                class="px-3 py-1 rounded-lg text-xs font-bold border transition-all"
+                :class="selectedYear === year
+                  ? 'bg-violet-500/20 border-violet-500/40 text-violet-200'
+                  : 'bg-white/4 border-white/8 text-gray-400 hover:bg-white/8'"
+              >
+                {{ year }}
+              </button>
+            </div>
+
+            <!-- Year detail -->
+            <div v-if="selectedYear !== null && yearItems.length > 0" class="space-y-3">
+
+              <!-- Counts by type -->
+              <div class="grid grid-cols-3 gap-2">
+                <div class="bg-blue-500/8 border border-blue-500/20 rounded-xl p-3 text-center">
+                  <p class="text-xl font-extrabold text-white">{{ yearByType.movie }}</p>
+                  <p class="text-[10px] text-gray-500 mt-0.5">🎬 Películas</p>
+                </div>
+                <div class="bg-violet-500/8 border border-violet-500/20 rounded-xl p-3 text-center">
+                  <p class="text-xl font-extrabold text-white">{{ yearByType.series }}</p>
+                  <p class="text-[10px] text-gray-500 mt-0.5">📺 Series</p>
+                </div>
+                <div class="bg-amber-500/8 border border-amber-500/20 rounded-xl p-3 text-center">
+                  <p class="text-xl font-extrabold text-white">{{ yearByType.book }}</p>
+                  <p class="text-[10px] text-gray-500 mt-0.5">📚 Libros</p>
+                </div>
+              </div>
+
+              <!-- Avg rating + top genre -->
+              <div class="grid grid-cols-2 gap-2">
+                <div class="bg-white/5 border border-white/5 rounded-xl p-3">
+                  <p class="text-[10px] text-gray-500 mb-1">Nota media</p>
+                  <p class="text-2xl font-extrabold text-white leading-none">
+                    {{ yearAvgRating ?? '—' }}<span class="text-sm text-gray-500 ml-0.5">/10</span>
+                  </p>
+                </div>
+                <div class="bg-white/5 border border-white/5 rounded-xl p-3">
+                  <p class="text-[10px] text-gray-500 mb-1">Género favorito</p>
+                  <p class="text-sm font-semibold text-white truncate">{{ yearTopGenre ?? '—' }}</p>
+                </div>
+              </div>
+
+              <!-- Monthly activity chart -->
+              <div class="bg-white/3 rounded-xl p-4 border border-white/5">
+                <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-3">Actividad mensual</p>
+                <div class="flex items-end gap-0.5 h-14">
+                  <div
+                    v-for="(count, i) in monthlyData"
+                    :key="i"
+                    class="flex-1 flex flex-col items-center gap-1 min-w-0"
+                  >
+                    <div
+                      class="w-full rounded-t transition-all duration-500"
+                      :class="count > 0 ? 'bg-violet-500/70' : 'bg-white/6'"
+                      :style="{ height: count > 0 ? Math.max(4, Math.round(count / maxMonth * 44)) + 'px' : '3px' }"
+                    />
+                    <span class="text-[8px] text-gray-600 leading-none">{{ MONTH_LABELS[i] }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Top 3 rated that year -->
+              <div v-if="yearTopRated.length">
+                <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Mejores del año</p>
+                <div class="space-y-1.5">
+                  <div
+                    v-for="(item, i) in yearTopRated"
+                    :key="item.$id"
+                    class="flex items-center gap-3 p-2.5 rounded-xl bg-white/4 border border-white/5"
+                  >
+                    <span class="text-base leading-none shrink-0">{{ ['🥇','🥈','🥉'][i] }}</span>
+                    <div class="w-7 h-9 rounded-md overflow-hidden shrink-0 border border-white/8">
+                      <img v-if="item.cover_url" :src="item.cover_url" :alt="item.title" class="w-full h-full object-cover" loading="lazy" />
+                      <div v-else class="w-full h-full flex items-center justify-center text-xs">
+                        {{ item.type === 'movie' ? '🎬' : item.type === 'series' ? '📺' : '📚' }}
+                      </div>
+                    </div>
+                    <p class="text-sm text-white font-medium flex-1 min-w-0 truncate">{{ item.title }}</p>
+                    <span class="text-xs font-bold text-amber-400 shrink-0">★ {{ item.rating }}</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <p v-else-if="selectedYear !== null" class="text-xs text-gray-500 text-center py-3">
+              Sin títulos terminados en {{ selectedYear }}
+            </p>
+          </div>
+
           <!-- ── Actividad reciente ──────────────────────────── -->
           <div v-if="recentActivity.length">
             <SectionTitle>Actividad reciente</SectionTitle>
@@ -168,7 +268,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { X, BarChart2, CheckCircle2, Inbox } from 'lucide-vue-next'
 import { useMediaStore } from '@/stores/media'
 import { ACHIEVEMENTS, getUnlockedIds } from '@/composables/useAchievements'
@@ -298,6 +398,68 @@ const recentActivity = computed(() =>
   [...media.all]
     .sort((a, b) => new Date(b.$updatedAt).getTime() - new Date(a.$updatedAt).getTime())
     .slice(0, 8)
+)
+
+// ── Year in Review ─────────────────────────────────────────
+
+const MONTH_LABELS = ['E','F','M','A','M','J','J','A','S','O','N','D']
+
+const selectedYear = ref<number | null>(null)
+
+const availableYears = computed(() => {
+  const years = new Set<number>()
+  for (const m of media.all) {
+    if (m.finished_at) years.add(new Date(m.finished_at).getFullYear())
+  }
+  return [...years].sort((a, b) => b - a)
+})
+
+const yearItems = computed(() => {
+  if (selectedYear.value === null) return []
+  return media.all.filter(m => {
+    if (!m.finished_at) return false
+    return new Date(m.finished_at).getFullYear() === selectedYear.value
+  })
+})
+
+const yearByType = computed(() => ({
+  movie:  yearItems.value.filter(m => m.type === 'movie').length,
+  series: yearItems.value.filter(m => m.type === 'series').length,
+  book:   yearItems.value.filter(m => m.type === 'book').length,
+}))
+
+const yearAvgRating = computed(() => {
+  const rated = yearItems.value.filter(m => m.rating)
+  if (!rated.length) return null
+  return (rated.reduce((s, m) => s + (m.rating ?? 0), 0) / rated.length).toFixed(1)
+})
+
+const yearTopGenre = computed(() => {
+  const map = new Map<string, number>()
+  for (const m of yearItems.value) {
+    if (!m.genre) continue
+    for (const g of m.genre.split(',').map(s => s.trim()).filter(Boolean))
+      map.set(g, (map.get(g) ?? 0) + 1)
+  }
+  if (!map.size) return null
+  return [...map.entries()].sort(([, a], [, b]) => b - a)[0][0]
+})
+
+const monthlyData = computed(() => {
+  const months = Array(12).fill(0) as number[]
+  for (const m of yearItems.value) {
+    if (m.finished_at) months[new Date(m.finished_at).getMonth()]++
+  }
+  return months
+})
+
+const maxMonth = computed(() => Math.max(...monthlyData.value, 1))
+
+const yearTopRated = computed(() =>
+  [...yearItems.value]
+    .filter(m => m.rating)
+    .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+    .slice(0, 3)
 )
 
 function relativeTime(iso: string): string {

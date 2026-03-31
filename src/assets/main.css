@@ -48,8 +48,8 @@
 }
 
 /* Drawer transitions */
-.drawer-enter-active { transition: transform .3s cubic-bezier(.32,.72,0,1); }
-.drawer-leave-active { transition: transform .25s cubic-bezier(.32,.72,0,1); }
+.drawer-enter-active { transition: transform .3s cubic-bezier(.32,.72,0,1); will-change: transform; }
+.drawer-leave-active { transition: transform .25s cubic-bezier(.32,.72,0,1); will-change: transform; }
 .drawer-enter-from, .drawer-leave-to { transform: translateX(100%); }
 
 .backdrop-enter-active { transition: opacity .2s ease; }
