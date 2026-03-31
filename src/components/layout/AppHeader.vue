@@ -3,139 +3,61 @@
     <!-- Bottom glow line -->
     <div class="absolute bottom-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-violet-500/40 to-transparent pointer-events-none" />
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="px-4 sm:px-6">
       <div class="flex items-center justify-between h-16 gap-4">
 
-        <!-- Logo -->
-        <div class="flex items-center gap-3 shrink-0">
+        <!-- Logo — mobile only (desktop has sidebar) -->
+        <div class="flex items-center gap-3 shrink-0 md:hidden">
           <div class="relative">
             <div class="absolute inset-0 rounded-xl bg-violet-500/30 blur-md" />
             <div class="relative w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-900/50">
               <Clapperboard class="w-4.5 h-4.5 text-white" />
             </div>
           </div>
-          <span class="font-bold text-white tracking-tight hidden sm:block">MediaTracker</span>
+          <span class="font-bold text-white tracking-tight">MediaTracker</span>
         </div>
 
         <!-- Stats pills — desktop only -->
-        <div class="hidden md:flex items-center gap-2">
+        <div class="hidden md:flex items-center gap-2 flex-1">
           <StatPill :count="counts.movie"  :avg="avgRatings.movie"  label="Películas" color="bg-blue-500/10 text-blue-300   border-blue-500/20" />
           <StatPill :count="counts.series" :avg="avgRatings.series" label="Series"    color="bg-violet-500/10 text-violet-300 border-violet-500/20" />
           <StatPill :count="counts.book"   :avg="avgRatings.book"   label="Libros"    color="bg-amber-500/10 text-amber-300  border-amber-500/20" />
         </div>
 
-        <!-- Actions — desktop only (mobile uses BottomNav) -->
-        <div class="flex items-center gap-1.5">
-          <!-- Search — visible on all sizes -->
+        <!-- User menu -->
+        <div class="relative ml-auto" ref="menuRef">
           <button
-            @click="$emit('search')"
-            class="btn-ghost flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl"
-            title="Buscar en TMDB"
+            @click="open = !open"
+            class="w-9 h-9 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-violet-900/40 hover:scale-105 hover:shadow-violet-900/60 transition-all duration-200"
           >
-            <Search class="w-4 h-4" />
-            <span class="hidden lg:inline">Buscar</span>
-          </button>
-          <button
-            @click="$emit('import')"
-            class="btn-ghost hidden lg:flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl"
-            title="Importar colección"
-          >
-            <Upload class="w-4 h-4" />
-            <span>Importar</span>
-          </button>
-          <button
-            @click="$emit('upcoming')"
-            class="btn-ghost hidden md:flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl"
-            title="Próximos estrenos"
-          >
-            <CalendarDays class="w-4 h-4 text-rose-400" />
-            <span class="hidden lg:inline">Estrenos</span>
-          </button>
-          <button
-            @click="$emit('queue')"
-            class="btn-ghost hidden md:flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl"
-            title="Cola de reproducción"
-          >
-            <ListOrdered class="w-4 h-4" />
-            <span class="hidden lg:inline">Cola</span>
-          </button>
-          <button
-            @click="$emit('discover')"
-            class="btn-ghost hidden md:flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl"
-            title="Descubrir tendencias"
-          >
-            <Compass class="w-4 h-4" />
-            <span class="hidden lg:inline">Descubrir</span>
-          </button>
-          <button
-            @click="$emit('random')"
-            class="btn-ghost hidden md:flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl"
-            title="¿Qué veo esta noche?"
-          >
-            <Dices class="w-4 h-4" />
-            <span class="hidden lg:inline">Aleatorio</span>
-          </button>
-          <button
-            @click="$emit('calendar')"
-            class="btn-ghost hidden md:flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl"
-            title="Historial"
-          >
-            <CalendarDays class="w-4 h-4" />
-            <span class="hidden lg:inline">Historial</span>
-          </button>
-          <button
-            @click="$emit('stats')"
-            class="btn-ghost hidden md:flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl"
-            title="Estadísticas"
-          >
-            <BarChart2 class="w-4 h-4" />
-            <span class="hidden lg:inline">Stats</span>
+            {{ initial }}
           </button>
 
-          <!-- Add — only on desktop; mobile uses BottomNav -->
-          <button
-            @click="$emit('add')"
-            class="btn-primary hidden md:flex items-center gap-1.5 text-sm px-4 py-2"
-          >
-            <Plus class="w-4 h-4" />
-            <span>Añadir</span>
-          </button>
-
-          <!-- User menu -->
-          <div class="relative" ref="menuRef">
-            <button
-              @click="open = !open"
-              class="w-9 h-9 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-violet-900/40 hover:scale-105 hover:shadow-violet-900/60 transition-all duration-200"
+          <Transition name="dropdown">
+            <div
+              v-if="open"
+              class="absolute right-0 mt-2 w-52 rounded-xl bg-gray-900 border border-white/10 shadow-2xl py-1 text-sm"
             >
-              {{ initial }}
-            </button>
-
-            <Transition name="dropdown">
-              <div
-                v-if="open"
-                class="absolute right-0 mt-2 w-52 rounded-xl bg-gray-900 border border-white/10 shadow-2xl py-1 text-sm"
-              >
-                <div class="px-4 py-2.5 border-b border-white/5">
-                  <p class="text-white font-medium truncate">{{ auth.user?.name }}</p>
-                  <p class="text-gray-400 text-xs truncate">{{ auth.user?.email }}</p>
-                </div>
-
-                <button
-                  @click="openPassword = true; open = false"
-                  class="w-full flex items-center gap-3 px-4 py-2 text-gray-300 hover:bg-white/5 hover:text-white transition-colors"
-                >
-                  <KeyRound class="w-4 h-4" /> Cambiar contraseña
-                </button>
-
-                <button
-                  @click="handleLogout"
-                  class="w-full flex items-center gap-3 px-4 py-2 text-red-400 hover:bg-red-500/10 transition-colors"
-                >
-                  <LogOut class="w-4 h-4" /> Cerrar sesión
-                </button>
+              <div class="px-4 py-2.5 border-b border-white/5">
+                <p class="text-white font-medium truncate">{{ auth.user?.name }}</p>
+                <p class="text-gray-400 text-xs truncate">{{ auth.user?.email }}</p>
               </div>
-            </Transition>
-          </div>
+
+              <button
+                @click="openPassword = true; open = false"
+                class="w-full flex items-center gap-3 px-4 py-2 text-gray-300 hover:bg-white/5 hover:text-white transition-colors"
+              >
+                <KeyRound class="w-4 h-4" /> Cambiar contraseña
+              </button>
+
+              <button
+                @click="handleLogout"
+                class="w-full flex items-center gap-3 px-4 py-2 text-red-400 hover:bg-red-500/10 transition-colors"
+              >
+                <LogOut class="w-4 h-4" /> Cerrar sesión
+              </button>
+            </div>
+          </Transition>
         </div>
       </div>
     </div>
@@ -179,14 +101,12 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { Clapperboard, Plus, LogOut, KeyRound, X, BarChart2, Dices, Upload, CalendarDays, Compass, Search, ListOrdered } from 'lucide-vue-next'
+import { Clapperboard, LogOut, KeyRound, X } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth'
 import { useMediaStore } from '@/stores/media'
 import { useUiStore } from '@/stores/ui'
 import { useRouter } from 'vue-router'
 import StatPill from './StatPill.vue'
-
-defineEmits<{ add: []; stats: []; random: []; import: []; calendar: []; discover: []; search: []; queue: []; upcoming: [] }>()
 
 const auth   = useAuthStore()
 const media  = useMediaStore()

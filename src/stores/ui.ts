@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref }          from 'vue'
+import { ref, watch }   from 'vue'
 import type { Media }   from '@/types'
 
 export interface Toast {
@@ -13,6 +13,7 @@ export const useUiStore = defineStore('ui', () => {
   const viewMode             = ref<'grid' | 'list'>('grid')
   const pendingRatingMedia   = ref<Media | null>(null)
   const showCommandPalette   = ref(false)
+  const sidebarExpanded      = ref(localStorage.getItem('mt_sidebar') !== 'false')
 
   function toast(message: string, type: Toast['type'] = 'success') {
     const id = Math.random().toString(36).slice(2)
@@ -24,5 +25,7 @@ export const useUiStore = defineStore('ui', () => {
     toasts.value = toasts.value.filter(t => t.id !== id)
   }
 
-  return { toasts, toast, dismiss, viewMode, pendingRatingMedia, showCommandPalette }
+  watch(sidebarExpanded, v => localStorage.setItem('mt_sidebar', String(v)))
+
+  return { toasts, toast, dismiss, viewMode, pendingRatingMedia, showCommandPalette, sidebarExpanded }
 })

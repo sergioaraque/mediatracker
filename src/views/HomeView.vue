@@ -1,18 +1,23 @@
 <template>
-  <div class="min-h-screen text-white flex flex-col relative">
+  <div class="min-h-screen text-white flex relative">
     <DynamicBackground :type="media.filterType as any" />
 
-    <AppHeader
+    <!-- Desktop sidebar -->
+    <AppSidebar
       @add="formDrawer = true"
+      @search="searchDrawer = true"
+      @discover="discoverDrawer = true"
+      @upcoming="router.push('/upcoming')"
+      @queue="queueDrawer = true"
+      @calendar="calendarDrawer = true"
       @stats="statsDrawer = true"
       @random="randomDrawer = true"
       @import="importDrawer = true"
-      @calendar="calendarDrawer = true"
-      @discover="discoverDrawer = true"
-      @search="searchDrawer = true"
-      @queue="queueDrawer = true"
-      @upcoming="router.push('/upcoming')"
     />
+
+    <!-- Main column -->
+    <div class="flex-1 flex flex-col min-w-0">
+    <AppHeader />
     <FilterBar ref="filterBarRef" />
 
     <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 pb-28 md:pb-8">
@@ -119,6 +124,7 @@
       </TransitionGroup>
 
     </main>
+    </div><!-- /main column -->
 
     <!-- Add / Edit drawer -->
     <MediaFormDrawer
@@ -210,6 +216,7 @@ import { useAchievements } from '@/composables/useAchievements'
 import { useQueue }        from '@/composables/useQueue'
 import type { Media } from '@/types'
 import AppHeader          from '@/components/layout/AppHeader.vue'
+import AppSidebar         from '@/components/layout/AppSidebar.vue'
 import FilterBar          from '@/components/layout/FilterBar.vue'
 import SectionBanner      from '@/components/layout/SectionBanner.vue'
 import BottomNav          from '@/components/layout/BottomNav.vue'
