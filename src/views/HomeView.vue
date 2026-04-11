@@ -7,6 +7,7 @@
       @add="formDrawer = true"
       @search="searchDrawer = true"
       @discover="discoverDrawer = true"
+      @advancedDiscovery="advancedDiscoveryDrawer = true"
       @upcoming="router.push('/upcoming')"
       @queue="queueDrawer = true"
       @calendar="calendarDrawer = true"
@@ -148,6 +149,9 @@
     <!-- Discover drawer -->
     <DiscoverDrawer v-model="discoverDrawer" />
 
+    <!-- Advanced Discovery drawer -->
+    <AdvancedDiscoveryDrawer v-model="advancedDiscoveryDrawer" />
+
     <!-- Search drawer -->
     <SearchDrawer v-model="searchDrawer" />
 
@@ -230,6 +234,7 @@ import ImportDrawer           from '@/components/ui/ImportDrawer.vue'
 import CalendarDrawer         from '@/components/ui/CalendarDrawer.vue'
 import CommandPalette         from '@/components/ui/CommandPalette.vue'
 import DiscoverDrawer         from '@/components/ui/DiscoverDrawer.vue'
+import AdvancedDiscoveryDrawer from '@/components/ui/AdvancedDiscoveryDrawer.vue'
 import SearchDrawer           from '@/components/ui/SearchDrawer.vue'
 import QueueDrawer            from '@/components/ui/QueueDrawer.vue'
 import DynamicBackground  from '@/components/layout/DynamicBackground.vue'
@@ -263,6 +268,7 @@ const randomDrawer  = ref(false)
 const importDrawer  = ref(false)
 const calendarDrawer  = ref(false)
 const discoverDrawer  = ref(false)
+const advancedDiscoveryDrawer = ref(false)
 const searchDrawer    = ref(false)
 const queueDrawer     = ref(false)
 const editTarget   = ref<Media | null>(null)

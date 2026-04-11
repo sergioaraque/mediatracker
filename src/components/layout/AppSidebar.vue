@@ -82,28 +82,30 @@ import { useUiStore } from '@/stores/ui'
 const ui = useUiStore()
 
 const emit = defineEmits<{
-  add:      []
-  search:   []
-  discover: []
-  upcoming: []
-  queue:    []
-  calendar: []
-  stats:    []
-  random:   []
-  import:   []
+  add:                  []
+  search:               []
+  discover:             []
+  advancedDiscovery:    []
+  upcoming:             []
+  queue:                []
+  calendar:             []
+  stats:                []
+  random:               []
+  import:               []
 }>()
 
-type NavEmit = 'search' | 'discover' | 'upcoming' | 'queue' | 'calendar' | 'stats' | 'random' | 'import'
+type NavEmit = 'search' | 'discover' | 'advancedDiscovery' | 'upcoming' | 'queue' | 'calendar' | 'stats' | 'random' | 'import'
 
 const navItems: { id: string; icon: unknown; label: string; emit: NavEmit; iconColor?: string }[] = [
-  { id: 'search',   icon: Search,       label: 'Buscar',     emit: 'search'   },
-  { id: 'discover', icon: Compass,      label: 'Descubrir',  emit: 'discover' },
-  { id: 'upcoming', icon: CalendarDays, label: 'Estrenos',   emit: 'upcoming', iconColor: 'text-rose-400' },
-  { id: 'queue',    icon: ListOrdered,  label: 'Cola',       emit: 'queue'    },
-  { id: 'calendar', icon: History,      label: 'Historial',  emit: 'calendar' },
-  { id: 'stats',    icon: BarChart2,    label: 'Stats',      emit: 'stats'    },
-  { id: 'random',   icon: Dices,        label: 'Aleatorio',  emit: 'random'   },
-  { id: 'import',   icon: Upload,       label: 'Importar',   emit: 'import'   },
+  { id: 'search',             icon: Search,       label: 'Buscar',           emit: 'search'           },
+  { id: 'discover',           icon: Compass,      label: 'Descubrir',        emit: 'discover'         },
+  { id: 'advancedDiscovery',  icon: Search,       label: 'Buscar experto',   emit: 'advancedDiscovery', iconColor: 'text-violet-400' },
+  { id: 'upcoming',           icon: CalendarDays, label: 'Estrenos',         emit: 'upcoming', iconColor: 'text-rose-400' },
+  { id: 'queue',              icon: ListOrdered,  label: 'Cola',             emit: 'queue'    },
+  { id: 'calendar',           icon: History,      label: 'Historial',        emit: 'calendar' },
+  { id: 'stats',              icon: BarChart2,    label: 'Stats',            emit: 'stats'    },
+  { id: 'random',             icon: Dices,        label: 'Aleatorio',        emit: 'random'   },
+  { id: 'import',             icon: Upload,       label: 'Importar',         emit: 'import'   },
 ]
 
 function handleNav(ev: NavEmit) {

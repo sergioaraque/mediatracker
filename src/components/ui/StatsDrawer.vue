@@ -55,7 +55,7 @@
 
           <!-- ── Perfil de géneros ──────────────────────────── -->
           <div v-if="topGenres.length">
-            <SectionTitle>Perfil de géneros</SectionTitle>
+            <SectionTitle>Histograma de géneros</SectionTitle>
             <div class="space-y-2.5">
               <div
                 v-for="(g, i) in topGenres"
@@ -75,6 +75,65 @@
                     :style="{ width: g.pct + '%', background: genreColors[i % genreColors.length] }"
                   />
                 </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Análisis de Plataformas ──────────────────── -->
+          <div v-if="platformStats.length">
+            <SectionTitle>Distribuición por plataforma</SectionTitle>
+            <div class="space-y-2">
+              <div
+                v-for="p in platformStats"
+                :key="p.platform"
+                class="flex items-center gap-3 p-3 rounded-xl bg-white/4 border border-white/5"
+              >
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-medium text-white">{{ p.platform || 'Sin plataforma' }}</p>
+                  <p class="text-xs text-gray-500">{{ p.count }} títulos</p>
+                </div>
+                <div class="text-right">
+                  <p class="text-sm font-bold text-violet-300">{{ p.pct }}%</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Tendencias Temporales ──────────────────────── -->
+          <div v-if="yearlyTrends.length > 1">
+            <SectionTitle>Tendencias por año</SectionTitle>
+            <div class="bg-white/3 rounded-xl p-4 border border-white/5">
+              <div class="space-y-3">
+                <div v-for="t in yearlyTrends" :key="t.year" class="space-y-1">
+                  <div class="flex items-center justify-between text-xs">
+                    <span class="text-gray-300 font-medium">{{ t.year }}</span>
+                    <span class="text-gray-500">{{ t.count }} <span class="text-gray-600">títulos</span></span>
+                  </div>
+                  <div class="h-1.5 rounded-full bg-white/6 overflow-hidden">
+                    <div
+                      class="h-full rounded-full bg-gradient-to-r from-violet-500 to-violet-400 transition-all duration-700"
+                      :style="{ width: (t.count / maxYearCount * 100) + '%' }"
+                    />
+                  </div>
+                </div>
+              </div>
+              <p class="text-[10px] text-gray-600 mt-3 text-center">Consumo acumulado por año</p>
+            </div>
+          </div>
+
+          <!-- ── Actualidad de Contenido ──────────────────── -->
+          <div v-if="total > 0">
+            <SectionTitle>Actualidad del contenido</SectionTitle>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 text-center">
+                <p class="text-xs text-blue-300 mb-1">Estreno promedio</p>
+                <p class="text-2xl font-extrabold text-blue-100">{{ avgYearReleased ?? '—' }}</p>
+                <p class="text-[10px] text-blue-400 mt-0.5">años desde el estreno</p>
+              </div>
+              <div class="bg-violet-500/10 border border-violet-500/20 rounded-xl p-3 text-center">
+                <p class="text-xs text-violet-300 mb-1">Más reciente</p>
+                <p class="text-2xl font-extrabold text-violet-100">{{ mostRecentYear ?? '—' }}</p>
+                <p class="text-[10px] text-violet-400 mt-0.5">año de estreno</p>
               </div>
             </div>
           </div>
@@ -461,6 +520,54 @@ const yearTopRated = computed(() =>
     .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
     .slice(0, 3)
 )
+
+const platformStats = computed(() => {
+  const map = new Map<string | null, number>()
+  for (const m of media.all) {
+    const platform = m.platform || null
+    map.set(platform, (map.get(platform) ?? 0) + 1)
+  }
+  const sorted = [...map.entries()]
+    .sort(([, a], [, b]) => b - a)
+  const max = sorted[0]?.[1] ?? 1
+  return sorted.map(([platform, count]) => ({
+    platform,
+    count,
+    pct: Math.round((count / max) * 100),
+  }))
+})
+
+const yearlyTrends = computed(() => {
+  const map = new Map<number, number>()
+  for (const m of media.all) {
+    if (!m.year) continue
+    map.set(m.year, (map.get(m.year) ?? 0) + 1)
+  }
+  return [...map.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([year, count]) => ({ year, count }))
+})
+
+const maxYearCount = computed(() => {
+  const counts = yearlyTrends.value.map(t => t.count)
+  return Math.max(...counts, 1)
+})
+
+const avgYearReleased = computed(() => {
+  const withYear = media.all.filter(m => m.year)
+  if (!withYear.length) return null
+  const now = new Date().getFullYear()
+  const avgAge = withYear.reduce((sum, m) => sum + (now - (m.year ?? now)), 0) / withYear.length
+  return Math.round(avgAge)
+})
+
+const mostRecentYear = computed(() => {
+  const years = media.all
+    .filter(m => m.year)
+    .map(m => m.year)
+    .sort((a, b) => (b ?? 0) - (a ?? 0))
+  return years[0] ?? null
+})
 
 function relativeTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime()
