@@ -72,21 +72,41 @@ export async function fetchSearch(query: string, type?: 'movie' | 'tv'): Promise
 
 export async function fetchDiscover(
   type: 'movie' | 'tv',
-  opts: { genreId?: number; yearFrom?: number; yearTo?: number; minRating?: number },
+  opts: {
+    genreIds?: number[];
+    yearFrom?: number;
+    yearTo?: number;
+    minRating?: number;
+    runtimeMin?: number;
+    runtimeMax?: number;
+    castIds?: number[];
+  },
 ): Promise<TmdbRecommendation[]> {
   const p = new URLSearchParams()
-  if (opts.genreId)   p.set('with_genres', String(opts.genreId))
+  if (opts.genreIds?.length)   p.set('with_genres', opts.genreIds.join(','))
   if (opts.minRating) p.set('vote_average.gte', String(opts.minRating))
+  if (opts.castIds?.length && type === 'movie') p.set('with_cast', opts.castIds.join(','))
   p.set('sort_by', 'vote_count.desc')
+  
   if (type === 'movie') {
     if (opts.yearFrom) p.set('primary_release_date.gte', `${opts.yearFrom}-01-01`)
     if (opts.yearTo)   p.set('primary_release_date.lte', `${opts.yearTo}-12-31`)
+    if (opts.runtimeMin) p.set('with_runtime.gte', String(opts.runtimeMin))
+    if (opts.runtimeMax) p.set('with_runtime.lte', String(opts.runtimeMax))
   } else {
     if (opts.yearFrom) p.set('first_air_date.gte', `${opts.yearFrom}-01-01`)
     if (opts.yearTo)   p.set('first_air_date.lte', `${opts.yearTo}-12-31`)
   }
   const res = await get<{ results: TmdbRecommendation[] }>(`/discover/${type}?${p.toString()}`)
   return res.results?.slice(0, 20) ?? []
+}
+
+export async function searchActors(query: string): Promise<Array<{ id: number; name: string; profile_path: string | null }>> {
+  if (!query.trim()) return []
+  const res = await get<{ results: Array<{ id: number; name: string; profile_path: string | null }> }>(
+    `/search/person?query=${encodeURIComponent(query)}`
+  )
+  return res.results?.slice(0, 10) ?? []
 }
 
 export async function fetchUpcoming(): Promise<TmdbRecommendation[]> {

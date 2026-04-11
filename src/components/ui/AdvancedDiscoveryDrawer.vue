@@ -16,13 +16,13 @@
             <X class="w-4 h-4" />
           </button>
           <div class="flex-1">
-            <p class="text-xs text-gray-500 font-medium uppercase tracking-wider">Buscar como experto</p>
+            <p class="text-xs text-gray-500 font-medium uppercase tracking-wider">Búsqueda experta</p>
           </div>
-          <Search class="w-4 h-4 text-violet-400 shrink-0" />
+          <Sliders class="w-4 h-4 text-violet-400 shrink-0" />
         </div>
 
         <!-- Type selector + filters -->
-        <div class="px-5 py-4 border-b border-white/8 shrink-0 space-y-4">
+        <div class="px-5 py-4 border-b border-white/8 shrink-0 overflow-y-auto max-h-[calc(100vh-180px)] space-y-4">
           <!-- Type tabs -->
           <div class="flex gap-2">
             <button
@@ -38,39 +38,44 @@
             </button>
           </div>
 
-          <!-- Genre filter -->
+          <!-- Genres — Multi-select visual -->
           <div>
-            <label class="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-2">Género</label>
-            <select
-              v-model="selectedGenre"
-              class="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-violet-500 transition-colors"
-            >
-              <option value="">Todos los géneros</option>
-              <option v-for="g in availableGenres" :key="g.id" :value="g.id">{{ g.label }}</option>
-            </select>
+            <label class="text-xs font-bold text-gray-300 uppercase tracking-wider block mb-2.5">Géneros</label>
+            <div class="flex flex-wrap gap-2">
+              <button
+                v-for="g in availableGenres"
+                :key="g.id"
+                @click="toggleGenre(g.id)"
+                class="px-3 py-1.5 rounded-full text-xs font-semibold border transition-all"
+                :class="selectedGenres.has(g.id)
+                  ? 'bg-violet-500/30 border-violet-500/60 text-violet-200'
+                  : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/8'"
+              >
+                {{ g.label }}
+              </button>
+            </div>
           </div>
 
           <!-- Year filter -->
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-2">Desde</label>
+              <label class="text-xs font-bold text-gray-300 uppercase tracking-wider block mb-1.5">Desde</label>
               <input
                 v-model.number="yearFrom"
                 type="number"
                 min="1900"
                 :max="currentYear"
-                class="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-violet-500 transition-colors"
-                placeholder="1900"
+                class="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-violet-500 transition-colors placeholder-gray-600"
               />
             </div>
             <div>
-              <label class="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-2">Hasta</label>
+              <label class="text-xs font-bold text-gray-300 uppercase tracking-wider block mb-1.5">Hasta</label>
               <input
                 v-model.number="yearTo"
                 type="number"
                 min="1900"
                 :max="currentYear"
-                class="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-violet-500 transition-colors"
+                class="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-violet-500 transition-colors placeholder-gray-600"
                 :placeholder="currentYear.toString()"
               />
             </div>
@@ -78,26 +83,97 @@
 
           <!-- Rating filter -->
           <div>
-            <label class="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-2">Rating mínimo</label>
-            <select
-              v-model.number="minRating"
-              class="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-violet-500 transition-colors"
-            >
-              <option :value="0">Todos</option>
-              <option :value="5">5+</option>
-              <option :value="6">6+</option>
-              <option :value="7">7+</option>
-              <option :value="7.5">7.5+</option>
-              <option :value="8">8+</option>
-            </select>
+            <label class="text-xs font-bold text-gray-300 uppercase tracking-wider block mb-1.5">Rating TMDB mínimo</label>
+            <div class="flex gap-2 flex-wrap">
+              <button
+                v-for="r in [0, 5, 6, 7, 7.5, 8]"
+                :key="r"
+                @click="minRating = r"
+                class="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all"
+                :class="minRating === r
+                  ? 'bg-amber-500/30 border-amber-500/60 text-amber-200'
+                  : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/8'"
+              >
+                {{ r === 0 ? 'Todos' : r + '+' }}
+              </button>
+            </div>
           </div>
 
-          <!-- Search button -->
+          <!-- Runtime filter (movies only) -->
+          <div v-if="activeType === 'movie'">
+            <label class="text-xs font-bold text-gray-300 uppercase tracking-wider block mb-2.5">Duración (minutos)</label>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <p class="text-[10px] text-gray-500 mb-1">Mínimo</p>
+                <input
+                  v-model.number="runtimeMin"
+                  type="number"
+                  min="0"
+                  max="300"
+                  class="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-violet-500 transition-colors placeholder-gray-600"
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <p class="text-[10px] text-gray-500 mb-1">Máximo</p>
+                <input
+                  v-model.number="runtimeMax"
+                  type="number"
+                  min="0"
+                  max="300"
+                  class="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-violet-500 transition-colors placeholder-gray-600"
+                  placeholder="300"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Cast search (movies only) -->
+          <div v-if="activeType === 'movie'">
+            <label class="text-xs font-bold text-gray-300 uppercase tracking-wider block mb-1.5">Buscar por actor</label>
+            <div class="relative">
+              <input
+                v-model="actorSearch"
+                type="text"
+                placeholder="Nombre del actor..."
+                @input="searchActors_"
+                class="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-violet-500 transition-colors placeholder-gray-600"
+              />
+              <!-- Autocomplete suggestions -->
+              <div v-if="actorSearchOpen && actorSuggestions.length" class="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-white/10 rounded-lg overflow-hidden z-10 max-h-32 overflow-y-auto">
+                <button
+                  v-for="actor in actorSuggestions"
+                  :key="actor.id"
+                  @click="selectActor(actor)"
+                  class="w-full px-3 py-2 text-left text-sm text-gray-300 hover:bg-white/10 transition-colors"
+                >
+                  {{ actor.name }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Selected actors chips -->
+            <div v-if="selectedActors.length" class="flex flex-wrap gap-2 mt-2">
+              <div
+                v-for="actor in selectedActors"
+                :key="actor.id"
+                class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-500/30 border border-blue-500/60 text-xs text-blue-200"
+              >
+                {{ actor.name }}
+                <button
+                  @click="removeActor(actor.id)"
+                  class="text-blue-300 hover:text-blue-100 transition-colors"
+                >
+                  <X class="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+          </div>
           <button
             @click="search"
             :disabled="loading"
             class="w-full px-4 py-2.5 rounded-lg bg-gradient-to-r from-violet-500 to-violet-600 text-white font-semibold transition-all duration-150"
-            :class="loading ? 'opacity-50 cursor-not-allowed' : 'hover:from-violet-600 hover:to-violet-700'"
+            :class="loading ? 'opacity-50 cursor-not-allowed' : 'hover:from-violet-600 hover:to-violet-700 shadow-lg shadow-violet-900/30'"
           >
             {{ loading ? 'Buscando...' : 'Buscar' }}
           </button>
@@ -126,7 +202,7 @@
 
           <!-- No results -->
           <div v-else-if="results.length === 0 && !loading" class="flex flex-col items-center justify-center py-16 gap-3">
-            <Search class="w-8 h-8 text-gray-600" />
+            <Sliders class="w-8 h-8 text-gray-600" />
             <p class="text-sm text-gray-400">Sin resultados con esos filtros</p>
           </div>
 
@@ -192,10 +268,10 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { X, Search, AlertCircle, Star, Plus } from 'lucide-vue-next'
+import { X, AlertCircle, Star, Plus, Sliders } from 'lucide-vue-next'
 import { useMediaStore } from '@/stores/media'
 import { useUiStore }    from '@/stores/ui'
-import { fetchDiscover, tmdbPoster, tmdbYear, tmdbDisplayTitle, type TmdbRecommendation } from '@/lib/tmdb'
+import { fetchDiscover, tmdbPoster, tmdbYear, tmdbDisplayTitle, searchActors, type TmdbRecommendation } from '@/lib/tmdb'
 
 const props = defineProps<{ modelValue: boolean }>()
 const emit  = defineEmits<{ 'update:modelValue': [v: boolean] }>()
@@ -203,11 +279,16 @@ const emit  = defineEmits<{ 'update:modelValue': [v: boolean] }>()
 const media = useMediaStore()
 const ui    = useUiStore()
 
-const activeType     = ref<'movie' | 'tv'>('movie')
-const selectedGenre  = ref('')
-const yearFrom       = ref<number | null>(null)
-const yearTo         = ref<number | null>(null)
-const minRating      = ref(0)
+const activeType          = ref<'movie' | 'tv'>('movie')
+const selectedGenres      = ref(new Set<number>())
+const yearFrom            = ref<number | null>(null)
+const yearTo              = ref<number | null>(null)
+const minRating           = ref(0)
+const runtimeMin          = ref<number | null>(null)
+const runtimeMax          = ref<number | null>(null)
+const actorSearch         = ref('')
+const actorSearchOpen     = ref(false)
+const actorSuggestions    = ref<Array<{ id: number; name: string }>>([])
 const loading        = ref(false)
 const error          = ref(false)
 const results        = ref<TmdbRecommendation[]>([])
@@ -259,11 +340,23 @@ function close() {
   emit('update:modelValue', false)
 }
 
+function toggleGenre(id: number) {
+  if (selectedGenres.value.has(id)) {
+    selectedGenres.value.delete(id)
+  } else {
+    selectedGenres.value.add(id)
+  }
+}
+
 function resetFilters() {
-  selectedGenre.value = ''
+  selectedGenres.value.clear()
   yearFrom.value = null
   yearTo.value = null
   minRating.value = 0
+  runtimeMin.value = null
+  runtimeMax.value = null
+  actorSearch.value = ''
+  selectedActors.value = []
   results.value = []
 }
 
@@ -273,10 +366,13 @@ async function search() {
   error.value = false
   try {
     results.value = await fetchDiscover(activeType.value, {
-      genreId:   selectedGenre.value ? parseInt(selectedGenre.value) : undefined,
-      yearFrom:  yearFrom.value ?? undefined,
-      yearTo:    yearTo.value ?? undefined,
-      minRating: minRating.value > 0 ? minRating.value : undefined,
+      genreIds:   selectedGenres.value.size > 0 ? [...selectedGenres.value] : undefined,
+      yearFrom:   yearFrom.value ?? undefined,
+      yearTo:     yearTo.value ?? undefined,
+      minRating:  minRating.value > 0 ? minRating.value : undefined,
+      runtimeMin: runtimeMin.value ?? undefined,
+      runtimeMax: runtimeMax.value ?? undefined,
+      castIds:    selectedActors.value.length > 0 ? selectedActors.value.map(a => a.id) : undefined,
     })
   } catch {
     error.value = true
@@ -291,10 +387,34 @@ function releaseYear(item: TmdbRecommendation): string {
   return new Date(date).getFullYear().toString()
 }
 
-function isInCollection(item: TmdbRecommendation): boolean {
-  const title = tmdbDisplayTitle(item).toLowerCase()
-  return media.all.some(m => m.title?.toLowerCase() === title)
+async function searchActors_(query: string) {
+  if (!query.trim()) {
+    actorSuggestions.value = []
+    actorSearchOpen.value = false
+    return
+  }
+  try {
+    actorSuggestions.value = await searchActors(query)
+    actorSearchOpen.value = actorSuggestions.value.length > 0
+  } catch {
+    actorSuggestions.value = []
+  }
 }
+
+function selectActor(actor: { id: number; name: string }) {
+  if (!selectedActors.value.find(a => a.id === actor.id)) {
+    selectedActors.value.push(actor)
+  }
+  actorSearch.value = ''
+  actorSuggestions.value = []
+  actorSearchOpen.value = false
+}
+
+function removeActor(id: number) {
+  selectedActors.value = selectedActors.value.filter(a => a.id !== id)
+}
+
+ 
 
 async function addItem(item: TmdbRecommendation) {
   adding.value = new Set([...adding.value, item.id])

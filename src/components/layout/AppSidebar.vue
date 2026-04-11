@@ -7,7 +7,7 @@
     <!-- Header: logo when expanded, just toggle when collapsed -->
     <div
       class="flex items-center h-16 border-b border-white/5 shrink-0"
-      :class="ui.sidebarExpanded ? 'px-3 gap-2' : 'justify-center'"
+      :class="ui.sidebarExpanded ? 'px-3 gap-2' : 'justify-center px-0'"
     >
       <div v-show="ui.sidebarExpanded" class="flex items-center gap-2.5 flex-1 min-w-0">
         <div class="relative shrink-0">
@@ -37,7 +37,7 @@
       <!-- Colección — active page indicator -->
       <div
         class="flex items-center h-10 rounded-xl bg-violet-500/15 text-violet-300 mb-1 shrink-0"
-        :class="ui.sidebarExpanded ? 'gap-3 px-2' : 'justify-center'"
+        :class="ui.sidebarExpanded ? 'gap-3 px-2' : 'justify-center px-0'"
       >
         <LayoutGrid class="w-5 h-5 shrink-0" />
         <span v-show="ui.sidebarExpanded" class="text-sm font-semibold whitespace-nowrap">Colección</span>
@@ -48,7 +48,7 @@
         :key="item.id"
         @click="handleNav(item.emit)"
         class="flex items-center h-10 w-full rounded-xl btn-ghost shrink-0"
-        :class="ui.sidebarExpanded ? 'gap-3 px-2' : 'justify-center'"
+        :class="ui.sidebarExpanded ? 'gap-3 px-2 justify-start' : 'justify-center px-0'"
         :title="!ui.sidebarExpanded ? item.label : undefined"
       >
         <component :is="item.icon" class="w-5 h-5 shrink-0" :class="item.iconColor ?? 'text-gray-400'" />
@@ -61,7 +61,7 @@
       <button
         @click="emit('add')"
         class="btn-primary w-full flex items-center gap-2 py-2.5"
-        :class="ui.sidebarExpanded ? 'px-4 justify-start' : 'justify-center'"
+        :class="ui.sidebarExpanded ? 'px-4 justify-start' : 'px-0 justify-center'"
         :title="!ui.sidebarExpanded ? 'Añadir' : undefined"
       >
         <Plus class="w-4 h-4 shrink-0" />
