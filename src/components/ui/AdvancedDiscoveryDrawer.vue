@@ -136,7 +136,7 @@
                 v-model="actorSearch"
                 type="text"
                 placeholder="Nombre del actor..."
-                @input="searchActors_"
+                @input="searchActors_(actorSearch)"
                 class="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-violet-500 transition-colors placeholder-gray-600"
               />
               <!-- Autocomplete suggestions -->
@@ -289,6 +289,7 @@ const runtimeMax          = ref<number | null>(null)
 const actorSearch         = ref('')
 const actorSearchOpen     = ref(false)
 const actorSuggestions    = ref<Array<{ id: number; name: string }>>([])
+const selectedActors      = ref<Array<{ id: number; name: string }>>([])
 const loading        = ref(false)
 const error          = ref(false)
 const results        = ref<TmdbRecommendation[]>([])
