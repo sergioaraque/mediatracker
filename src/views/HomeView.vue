@@ -17,6 +17,32 @@
 
     <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 pb-28 md:pb-8">
 
+      <!-- Quick start hint -->
+      <Transition name="fade-down">
+        <div
+          v-if="showQuickStart"
+          class="mb-6 rounded-2xl border border-cyan-500/25 bg-cyan-500/10 p-4"
+        >
+          <div class="flex items-start gap-3">
+            <div class="mt-0.5 rounded-lg bg-cyan-500/20 p-2">
+              <Lightbulb class="w-4 h-4 text-cyan-300" />
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-semibold text-cyan-100">Atajos para ir mas rapido</p>
+              <p class="text-xs text-cyan-200/80 mt-1">N para anadir, Ctrl+K para comandos y Herramientas para acciones avanzadas.</p>
+              <div class="mt-3 flex flex-wrap items-center gap-2">
+                <button @click="formDrawer = true" class="tool-btn"><Plus class="w-3.5 h-3.5" /> Anadir</button>
+                <button @click="showCommandPalette = true" class="tool-btn"><Keyboard class="w-3.5 h-3.5" /> Comandos</button>
+                <button @click="toolsDrawer = true" class="tool-btn"><Compass class="w-3.5 h-3.5" /> Herramientas</button>
+              </div>
+            </div>
+            <button @click="dismissQuickStart" class="btn-ghost p-1.5 rounded-lg shrink-0">
+              <X class="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </Transition>
+
       <!-- Siguiente a ver banner -->
       <Transition name="fade-down">
         <div
@@ -72,9 +98,14 @@
         </div>
         <h2 class="text-2xl font-bold text-white mb-2">Colección vacía</h2>
         <p class="text-gray-400 max-w-sm mb-8">Empieza añadiendo tu primera película, serie o libro.</p>
-        <button @click="formDrawer = true" class="btn-primary px-6 py-3 flex items-center gap-2">
-          <Plus class="w-5 h-5" /> Añadir ahora
-        </button>
+        <div class="flex flex-wrap justify-center gap-2">
+          <button @click="formDrawer = true" class="btn-primary px-6 py-3 flex items-center gap-2">
+            <Plus class="w-5 h-5" /> Añadir ahora
+          </button>
+          <button @click="openTool('discover')" class="btn-secondary px-5 py-3 flex items-center gap-2">
+            <Compass class="w-4 h-4" /> Descubrir
+          </button>
+        </div>
       </div>
 
       <!-- Empty state: filters -->
@@ -84,7 +115,10 @@
         </div>
         <h2 class="text-xl font-bold text-white mb-2">Sin resultados</h2>
         <p class="text-gray-400 text-sm mb-6">Prueba a cambiar los filtros o la búsqueda.</p>
-        <button @click="clearFilters" class="btn-secondary text-sm px-4 py-2">Limpiar filtros</button>
+        <div class="flex flex-wrap justify-center gap-2">
+          <button @click="clearFilters" class="btn-secondary text-sm px-4 py-2">Limpiar filtros</button>
+          <button @click="searchDrawer = true" class="btn-secondary text-sm px-4 py-2">Abrir busqueda</button>
+        </div>
       </div>
 
       <!-- Grid view -->
@@ -235,7 +269,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { Inbox, Plus, SearchX, Trash2, X, Compass, Sparkles, ListOrdered, CalendarDays, BarChart2, Dices, Upload } from 'lucide-vue-next'
+import { Inbox, Plus, SearchX, Trash2, X, Compass, Sparkles, ListOrdered, CalendarDays, BarChart2, Dices, Upload, Lightbulb, Keyboard } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 import { useMediaStore } from '@/stores/media'
 import { useUiStore }    from '@/stores/ui'
@@ -301,6 +335,7 @@ const editTarget   = ref<Media | null>(null)
 const detailTarget = ref<Media | null>(null)
 const deleteTarget = ref<string | null>(null)
 const filterBarRef = ref<InstanceType<typeof FilterBar>>()
+const showQuickStart = ref(localStorage.getItem('mt_quickstart_dismissed') !== 'true')
 
 useAchievements()
 
@@ -350,6 +385,11 @@ function clearFilters() {
   media.filterMinRating = null
   media.filterPlatform  = null
   media.search          = ''
+}
+
+function dismissQuickStart() {
+  showQuickStart.value = false
+  localStorage.setItem('mt_quickstart_dismissed', 'true')
 }
 
 type ToolKey = 'discover' | 'advanced' | 'queue' | 'calendar' | 'stats' | 'random' | 'import'
