@@ -105,11 +105,9 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Clapperboard, Mail, Lock, Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth'
-import { useMediaStore } from '@/stores/media'
 
 const router = useRouter()
 const auth   = useAuthStore()
-const media  = useMediaStore()
 
 const mode     = ref<'login' | 'register'>('login')
 const email    = ref('')
@@ -127,7 +125,6 @@ async function submit() {
     } else {
       await auth.register(email.value, password.value)
     }
-    await media.fetch()
     router.push('/app')
   } catch (e: any) {
     const msg = e?.message ?? ''
