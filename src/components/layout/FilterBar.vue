@@ -301,7 +301,7 @@ let debounceTimer = 0
 function onSearchInput(e: Event) {
   localSearch.value = (e.target as HTMLInputElement).value
   clearTimeout(debounceTimer)
-  debounceTimer = window.setTimeout(() => { media.search = localSearch.value }, 280)
+  debounceTimer = window.setTimeout(() => { media.search = localSearch.value }, 140)
 }
 
 watch(() => media.search, v => { if (v !== localSearch.value) localSearch.value = v })

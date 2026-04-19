@@ -14,16 +14,8 @@ const router = createRouter({
 router.beforeEach(async (to) => {
   const auth = useAuthStore()
 
-  // Esperar a que la sesión se resuelva (máx. 5 s por si acaso)
-  if (auth.loading) {
-    await new Promise<void>(resolve => {
-      const interval = setInterval(() => {
-        if (!auth.loading) { clearInterval(interval); clearTimeout(timeout); resolve() }
-      }, 50)
-      // Timeout also clears the interval to prevent it running forever
-      const timeout = setTimeout(() => { clearInterval(interval); resolve() }, 5000)
-    })
-  }
+  // Ensure auth state is resolved before applying route rules.
+  await auth.init()
 
   if (to.meta.requiresAuth && !auth.user) return { name: 'login' }
   if (to.name === 'login' && auth.user)   return { name: 'app' }

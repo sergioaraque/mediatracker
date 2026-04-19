@@ -138,21 +138,34 @@ const ratingLabel = computed(() => {
 
 async function save() {
   if (!m.value || !rating.value || saving.value) return
+
+  const mediaId = m.value.$id
+  const nextRating = rating.value
+  const nextReview = review.value.trim() || null
+
+  // Optimistic local update so the dialog closes instantly.
+  const item = media.all.find(i => i.$id === mediaId)
+  const prevRating = item?.rating ?? null
+  const prevReview = item?.review ?? null
+  if (item) {
+    item.rating = nextRating
+    item.review = nextReview
+  }
+
+  ui.toast('Valoración guardada')
+  close()
+
   saving.value = true
   try {
-    await databases.updateDocument(DB_ID, COLL_MEDIA, m.value.$id, {
-      rating: rating.value,
-      review: review.value.trim() || null,
+    await databases.updateDocument(DB_ID, COLL_MEDIA, mediaId, {
+      rating: nextRating,
+      review: nextReview,
     })
-    // Update local store
-    const item = media.all.find(i => i.$id === m.value!.$id)
-    if (item) {
-      item.rating = rating.value
-      item.review = review.value.trim() || null
-    }
-    ui.toast('Valoración guardada')
-    close()
   } catch {
+    if (item) {
+      item.rating = prevRating
+      item.review = prevReview
+    }
     ui.toast('Error al guardar la valoración', 'error')
   } finally {
     saving.value = false

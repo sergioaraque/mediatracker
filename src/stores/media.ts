@@ -23,21 +23,8 @@ export const useMediaStore = defineStore('media', () => {
   const sortField       = ref<SortField>('$createdAt')
   const sortOrder       = ref<SortOrder>('DESC')
 
-  const filtered = computed(() => {
-    let r = [...all.value]
-
-    if (filterType.value)      r = r.filter(m => m.type     === filterType.value)
-    if (filterStatus.value)    r = r.filter(m => m.status   === filterStatus.value)
-    if (filterMinRating.value) r = r.filter(m => (m.rating ?? 0) >= filterMinRating.value!)
-    if (filterPlatform.value)  r = r.filter(m => m.platform === filterPlatform.value)
-
-    if (search.value) {
-      const q = search.value.toLowerCase()
-      r = r.filter(m =>
-        m.title?.toLowerCase().includes(q) ||
-        m.genre?.toLowerCase().includes(q)
-      )
-    }
+  const sorted = computed(() => {
+    const r = [...all.value]
 
     r.sort((a, b) => {
       let va: string | number, vb: string | number
@@ -51,6 +38,25 @@ export const useMediaStore = defineStore('media', () => {
       if (va > vb) return sortOrder.value === 'ASC' ?  1 : -1
       return 0
     })
+
+    return r
+  })
+
+  const filtered = computed(() => {
+    let r = sorted.value
+
+    if (filterType.value)      r = r.filter(m => m.type     === filterType.value)
+    if (filterStatus.value)    r = r.filter(m => m.status   === filterStatus.value)
+    if (filterMinRating.value) r = r.filter(m => (m.rating ?? 0) >= filterMinRating.value!)
+    if (filterPlatform.value)  r = r.filter(m => m.platform === filterPlatform.value)
+
+    if (search.value) {
+      const q = search.value.toLowerCase()
+      r = r.filter(m =>
+        m.title?.toLowerCase().includes(q) ||
+        m.genre?.toLowerCase().includes(q)
+      )
+    }
 
     return r
   })
