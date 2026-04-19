@@ -5,15 +5,18 @@
     </Transition>
 
     <Transition name="drawer">
-      <div v-if="modelValue" class="fixed inset-y-0 right-0 w-full max-w-lg bg-gray-900 border-l border-white/10 z-50 flex flex-col">
+      <div v-if="modelValue" class="drawer-panel max-w-lg">
 
         <!-- Header -->
-        <div class="flex items-center justify-between px-6 py-4 border-b border-white/5 shrink-0">
-          <div class="flex items-center gap-2.5">
+        <div class="drawer-header">
+          <div class="drawer-title-group">
             <BarChart2 class="w-5 h-5 text-violet-400" />
-            <h2 class="text-lg font-semibold text-white">Mis estadísticas</h2>
+            <div>
+              <h2 class="drawer-title">Mis Estadisticas</h2>
+              <p class="drawer-subtitle">Resumen de progreso y consumo</p>
+            </div>
           </div>
-          <button @click="$emit('update:modelValue', false)" class="btn-ghost p-2 rounded-xl">
+          <button @click="$emit('update:modelValue', false)" class="drawer-close">
             <X class="w-5 h-5" />
           </button>
         </div>

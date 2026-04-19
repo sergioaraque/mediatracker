@@ -7,14 +7,25 @@
     <Transition name="drawer">
       <div
         v-if="modelValue"
-        class="fixed inset-y-0 right-0 w-full max-w-2xl bg-gray-900 border-l border-white/10 z-50 flex flex-col"
+        class="drawer-panel max-w-2xl"
         @click.stop
       >
-        <!-- Header: search input -->
-        <div class="flex items-center gap-3 px-4 py-3 border-b border-white/8 shrink-0">
-          <button @click="close" class="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/8 transition-colors shrink-0">
+        <!-- Header -->
+        <div class="drawer-header">
+          <div class="drawer-title-group">
+            <Search class="w-4.5 h-4.5 text-violet-400 shrink-0" />
+            <div class="min-w-0">
+              <h2 class="drawer-title">Buscar En TMDB</h2>
+              <p class="drawer-subtitle">Busca por titulo o explora por filtros</p>
+            </div>
+          </div>
+          <button @click="close" class="drawer-close shrink-0">
             <X class="w-4 h-4" />
           </button>
+        </div>
+
+        <!-- Search input -->
+        <div class="px-4 py-3 border-b border-white/8 shrink-0">
           <div class="flex-1 relative">
             <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
             <input

@@ -7,16 +7,16 @@
     <Transition name="drawer">
       <div
         v-if="modelValue"
-        class="fixed inset-y-0 right-0 w-full max-w-lg bg-gray-900 border-l border-white/10 z-50 flex flex-col"
+        class="drawer-panel max-w-lg"
         @click.stop
       >
         <!-- Header -->
-        <div class="flex items-center justify-between px-5 py-4 border-b border-white/8 shrink-0">
-          <div class="flex items-center gap-2.5">
+        <div class="drawer-header">
+          <div class="drawer-title-group">
             <ListOrdered class="w-4.5 h-4.5 text-violet-400" />
             <div>
-              <h2 class="text-sm font-semibold text-white">Cola de reproducción</h2>
-              <p class="text-[11px] text-gray-500">{{ queue.length }} elementos</p>
+              <h2 class="drawer-title">Cola De Reproduccion</h2>
+              <p class="drawer-subtitle">{{ queue.length }} elementos</p>
             </div>
           </div>
           <div class="flex items-center gap-2">
@@ -27,7 +27,7 @@
             >
               Limpiar
             </button>
-            <button @click="close" class="btn-ghost p-2 rounded-xl">
+            <button @click="close" class="drawer-close">
               <X class="w-4 h-4" />
             </button>
           </div>

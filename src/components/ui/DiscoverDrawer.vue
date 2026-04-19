@@ -7,18 +7,21 @@
     <Transition name="drawer">
       <div
         v-if="modelValue"
-        class="fixed inset-y-0 right-0 w-full max-w-2xl bg-gray-900 border-l border-white/10 z-50 flex flex-col"
+        class="drawer-panel max-w-2xl"
         @click.stop
       >
         <!-- Header -->
-        <div class="flex items-center gap-3 px-5 py-4 border-b border-white/8 shrink-0">
-          <button @click="close" class="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/8 transition-colors">
+        <div class="drawer-header">
+          <div class="drawer-title-group">
+            <Compass class="w-4.5 h-4.5 text-violet-400 shrink-0" />
+            <div class="min-w-0">
+              <h2 class="drawer-title">Descubrir</h2>
+              <p class="drawer-subtitle">Tendencias de la semana</p>
+            </div>
+          </div>
+          <button @click="close" class="drawer-close">
             <X class="w-4 h-4" />
           </button>
-          <div class="flex-1">
-            <p class="text-xs text-gray-500 font-medium uppercase tracking-wider">Tendencias esta semana</p>
-          </div>
-          <Compass class="w-4 h-4 text-violet-400 shrink-0" />
         </div>
 
         <!-- Tabs -->
@@ -121,7 +124,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { X, Compass, Star, Film, Plus, Check, Loader2, AlertCircle } from 'lucide-vue-next'
+import { X, Compass, Star, Plus, Check, Loader2, AlertCircle } from 'lucide-vue-next'
 import { fetchTrending, tmdbPoster, tmdbYear, tmdbDisplayTitle, type TmdbRecommendation } from '@/lib/tmdb'
 import { useMediaStore } from '@/stores/media'
 import { useUiStore }    from '@/stores/ui'

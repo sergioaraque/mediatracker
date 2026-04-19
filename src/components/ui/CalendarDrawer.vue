@@ -9,13 +9,16 @@
     </Transition>
 
     <Transition name="drawer">
-      <div v-if="modelValue" class="fixed inset-y-0 right-0 w-full max-w-2xl bg-gray-900 border-l border-white/10 z-50 flex flex-col">
+      <div v-if="modelValue" class="drawer-panel max-w-2xl">
 
         <!-- Header -->
-        <div class="flex items-center justify-between px-6 py-4 border-b border-white/5 shrink-0">
-          <div class="flex items-center gap-2.5">
+        <div class="drawer-header">
+          <div class="drawer-title-group">
             <CalendarDays class="w-5 h-5 text-violet-400" />
-            <h2 class="text-lg font-semibold text-white">Historial</h2>
+            <div>
+              <h2 class="drawer-title">Historial</h2>
+              <p class="drawer-subtitle">Tus vistas por calendario</p>
+            </div>
           </div>
           <div class="flex items-center gap-3">
             <div class="flex items-center gap-1 bg-white/5 rounded-xl px-2 py-1">
@@ -31,7 +34,7 @@
                 <ChevronRight class="w-3.5 h-3.5" />
               </button>
             </div>
-            <button @click="$emit('update:modelValue', false)" class="btn-ghost p-2 rounded-xl">
+            <button @click="$emit('update:modelValue', false)" class="drawer-close">
               <X class="w-5 h-5" />
             </button>
           </div>

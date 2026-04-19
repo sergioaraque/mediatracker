@@ -48,6 +48,30 @@
   .surface-raised {
     @apply bg-slate-800/60 border border-slate-700/40;
   }
+
+  .drawer-panel {
+    @apply fixed inset-y-0 right-0 w-full bg-gray-900 border-l border-white/10 z-50 flex flex-col;
+  }
+
+  .drawer-header {
+    @apply flex items-center justify-between px-5 py-4 border-b border-white/10 shrink-0;
+  }
+
+  .drawer-title-group {
+    @apply flex items-center gap-2.5 min-w-0;
+  }
+
+  .drawer-title {
+    @apply text-base font-semibold text-white leading-none;
+  }
+
+  .drawer-subtitle {
+    @apply text-[11px] text-gray-500 mt-1 leading-none;
+  }
+
+  .drawer-close {
+    @apply btn-ghost p-2 rounded-xl;
+  }
 }
 
 /* Drawer transitions */
