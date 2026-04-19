@@ -37,7 +37,7 @@
         </Transition>
       </div>
 
-      <!-- ── Row 2 desktop: filters + big search ───────────────────── -->
+      <!-- ── Row 2 desktop: primary controls ────────────────────────── -->
       <div class="hidden md:flex items-center gap-2 px-4 sm:px-6 lg:px-8 pb-3">
 
         <!-- Status pills -->
@@ -47,36 +47,6 @@
             :active="media.filterStatus === s.value" :color="s.color"
             @click="media.filterStatus = media.filterStatus === s.value ? null : s.value"
           >{{ s.label }}</StatusPill>
-        </div>
-
-        <div class="w-px h-5 bg-white/10 shrink-0" />
-
-        <!-- Rating filter -->
-        <div class="flex items-center gap-1 shrink-0">
-          <button
-            v-for="r in ratingFilters" :key="r"
-            @click="media.filterMinRating = media.filterMinRating === r ? null : r"
-            class="flex items-center gap-0.5 px-2 py-1 rounded-lg text-[11px] font-bold border transition-all"
-            :class="media.filterMinRating === r
-              ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-              : 'text-gray-500 hover:text-amber-300 hover:bg-amber-500/10 border-transparent'"
-          ><Star class="w-2.5 h-2.5 fill-current" />{{ r }}+</button>
-        </div>
-
-        <div class="w-px h-5 bg-white/10 shrink-0" />
-
-        <!-- Platform -->
-        <div class="relative shrink-0">
-          <select
-            :value="media.filterPlatform ?? ''"
-            @change="e => media.filterPlatform = (e.target as HTMLSelectElement).value || null"
-            class="input text-sm py-1.5 pr-8 appearance-none cursor-pointer"
-            :class="media.filterPlatform ? 'border-violet-500/40 text-white' : 'text-gray-400'"
-          >
-            <option value="">Plataforma</option>
-            <option v-for="p in PLATFORMS" :key="p" :value="p">{{ p }}</option>
-          </select>
-          <ChevronDown class="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
         </div>
 
         <div class="flex-1" />
@@ -111,6 +81,20 @@
           <ChevronDown class="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
         </div>
 
+        <button
+          @click="showAdvanced = !showAdvanced"
+          class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border transition-all shrink-0"
+          :class="showAdvanced || advancedFilterCount > 0
+            ? 'bg-violet-500/15 text-violet-200 border-violet-500/35'
+            : 'bg-white/5 text-gray-400 border-white/10 hover:bg-white/10 hover:text-gray-200'"
+        >
+          Filtros avanzados
+          <span
+            v-if="advancedFilterCount > 0"
+            class="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-violet-500/25 text-violet-200"
+          >{{ advancedFilterCount }}</span>
+        </button>
+
         <!-- View toggle -->
         <div class="flex items-center gap-0.5 bg-white/6 rounded-xl p-1 shrink-0">
           <button @click="ui.viewMode = 'grid'" class="p-1.5 rounded-lg transition-colors" :class="ui.viewMode === 'grid' ? 'bg-white/15 text-white' : 'text-gray-500 hover:text-gray-300'" title="Cuadrícula"><LayoutGrid class="w-3.5 h-3.5" /></button>
@@ -127,17 +111,6 @@
           class="shrink-0"
         >{{ s.label }}</StatusPill>
 
-        <div class="w-px h-5 bg-white/10 shrink-0" />
-
-        <button
-          v-for="r in ratingFilters" :key="r"
-          @click="media.filterMinRating = media.filterMinRating === r ? null : r"
-          class="flex items-center gap-0.5 px-2 py-1 rounded-lg text-[11px] font-bold border transition-all shrink-0"
-          :class="media.filterMinRating === r ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' : 'text-gray-500 border-transparent'"
-        ><Star class="w-2.5 h-2.5 fill-current" />{{ r }}+</button>
-
-        <div class="w-px h-5 bg-white/10 shrink-0" />
-
         <div class="relative shrink-0">
           <select
             :value="media.sortField + ':' + media.sortOrder" @change="onSortChange"
@@ -150,6 +123,17 @@
           </select>
           <ChevronDown class="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
         </div>
+
+        <button
+          @click="showAdvanced = !showAdvanced"
+          class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border shrink-0 transition-colors"
+          :class="showAdvanced || advancedFilterCount > 0
+            ? 'bg-violet-500/15 text-violet-200 border-violet-500/35'
+            : 'bg-white/5 text-gray-400 border-white/10'"
+        >
+          Filtros
+          <span v-if="advancedFilterCount > 0" class="text-[10px] font-bold">{{ advancedFilterCount }}</span>
+        </button>
 
         <div class="flex items-center gap-0.5 bg-white/6 rounded-xl p-1 shrink-0 ml-auto">
           <button @click="ui.viewMode = 'grid'" class="p-1.5 rounded-lg" :class="ui.viewMode === 'grid' ? 'bg-white/15 text-white' : 'text-gray-500'"><LayoutGrid class="w-3.5 h-3.5" /></button>
@@ -168,6 +152,50 @@
           />
         </div>
       </div>
+
+      <!-- ── Advanced filters (desktop + mobile) ───────────────────── -->
+      <Transition name="avg-fade">
+        <div
+          v-if="showAdvanced"
+          class="px-4 sm:px-6 lg:px-8 pb-3"
+        >
+          <div class="rounded-2xl border border-white/10 bg-white/5 p-3 md:p-4">
+            <div class="flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
+              <div class="flex items-center gap-1 shrink-0 overflow-x-auto scrollbar-none pb-1 md:pb-0">
+                <button
+                  v-for="r in ratingFilters" :key="r"
+                  @click="media.filterMinRating = media.filterMinRating === r ? null : r"
+                  class="flex items-center gap-0.5 px-2 py-1 rounded-lg text-[11px] font-bold border transition-all shrink-0"
+                  :class="media.filterMinRating === r
+                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                    : 'text-gray-500 hover:text-amber-300 hover:bg-amber-500/10 border-transparent'"
+                ><Star class="w-2.5 h-2.5 fill-current" />{{ r }}+</button>
+              </div>
+
+              <div class="relative md:w-52">
+                <select
+                  :value="media.filterPlatform ?? ''"
+                  @change="e => media.filterPlatform = (e.target as HTMLSelectElement).value || null"
+                  class="input text-sm py-2 pr-8 appearance-none cursor-pointer"
+                  :class="media.filterPlatform ? 'border-violet-500/40 text-white' : 'text-gray-400'"
+                >
+                  <option value="">Todas las plataformas</option>
+                  <option v-for="p in PLATFORMS" :key="p" :value="p">{{ p }}</option>
+                </select>
+                <ChevronDown class="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+              </div>
+
+              <button
+                v-if="advancedFilterCount > 0"
+                @click="clearAdvancedFilters"
+                class="btn-ghost text-xs px-3 py-2 rounded-lg self-start md:self-auto"
+              >
+                Limpiar avanzados
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
 
     </div>
   </div>
@@ -239,18 +267,31 @@ const sections = computed(() => [
 ])
 
 const hasActiveFilters = computed(() =>
+  media.filterType !== null ||
   media.filterStatus !== null ||
   media.filterMinRating !== null ||
   media.filterPlatform !== null ||
   media.search !== ''
 )
 
+const advancedFilterCount = computed(() =>
+  Number(media.filterMinRating !== null) + Number(media.filterPlatform !== null)
+)
+
+const showAdvanced = ref(false)
+
 function clearAllFilters() {
+  media.filterType      = null
   media.filterStatus    = null
   media.filterMinRating = null
   media.filterPlatform  = null
   media.search          = ''
   localSearch.value     = ''
+}
+
+function clearAdvancedFilters() {
+  media.filterMinRating = null
+  media.filterPlatform  = null
 }
 
 const localSearch = ref(media.search)

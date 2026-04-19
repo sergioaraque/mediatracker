@@ -6,14 +6,8 @@
     <AppSidebar
       @add="formDrawer = true"
       @search="searchDrawer = true"
-      @discover="discoverDrawer = true"
-      @advancedDiscovery="advancedDiscoveryDrawer = true"
       @upcoming="router.push('/upcoming')"
-      @queue="queueDrawer = true"
-      @calendar="calendarDrawer = true"
-      @stats="statsDrawer = true"
-      @random="randomDrawer = true"
-      @import="importDrawer = true"
+      @tools="toolsDrawer = true"
     />
 
     <!-- Main column -->
@@ -165,8 +159,39 @@
       @add="formDrawer = true"
       @calendar="calendarDrawer = true"
       @search="searchDrawer = true"
-      @stats="statsDrawer = true"
+      @tools="toolsDrawer = true"
     />
+
+    <!-- Tools hub -->
+    <Teleport to="body">
+      <Transition name="backdrop">
+        <div v-if="toolsDrawer" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[58]" @click="toolsDrawer = false" />
+      </Transition>
+      <Transition name="scale">
+        <div
+          v-if="toolsDrawer"
+          class="fixed inset-0 z-[58] flex items-center justify-center p-4"
+          @click.self="toolsDrawer = false"
+        >
+          <div class="w-full max-w-md rounded-2xl border border-white/10 bg-gray-900 p-5 shadow-2xl">
+            <div class="mb-4 flex items-center justify-between">
+              <h3 class="text-lg font-bold text-white">Herramientas</h3>
+              <button @click="toolsDrawer = false" class="btn-ghost p-2 rounded-lg"><X class="w-4 h-4" /></button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <button @click="openTool('discover')" class="tool-btn"><Compass class="w-4 h-4" /> Descubrir</button>
+              <button @click="openTool('advanced')" class="tool-btn"><Sparkles class="w-4 h-4" /> Buscar experto</button>
+              <button @click="openTool('queue')" class="tool-btn"><ListOrdered class="w-4 h-4" /> Cola</button>
+              <button @click="openTool('calendar')" class="tool-btn"><CalendarDays class="w-4 h-4" /> Historial</button>
+              <button @click="openTool('stats')" class="tool-btn"><BarChart2 class="w-4 h-4" /> Estadísticas</button>
+              <button @click="openTool('random')" class="tool-btn"><Dices class="w-4 h-4" /> Aleatorio</button>
+              <button @click="openTool('import')" class="tool-btn"><Upload class="w-4 h-4" /> Importar</button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
 
     <!-- Detail drawer -->
     <DetailDrawer
@@ -210,7 +235,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { Inbox, Plus, SearchX, Trash2, X } from 'lucide-vue-next'
+import { Inbox, Plus, SearchX, Trash2, X, Compass, Sparkles, ListOrdered, CalendarDays, BarChart2, Dices, Upload } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 import { useMediaStore } from '@/stores/media'
 import { useUiStore }    from '@/stores/ui'
@@ -266,6 +291,7 @@ const detailDrawer  = ref(false)
 const statsDrawer   = ref(false)
 const randomDrawer  = ref(false)
 const importDrawer  = ref(false)
+const toolsDrawer   = ref(false)
 const calendarDrawer  = ref(false)
 const discoverDrawer  = ref(false)
 const advancedDiscoveryDrawer = ref(false)
@@ -325,6 +351,19 @@ function clearFilters() {
   media.filterPlatform  = null
   media.search          = ''
 }
+
+type ToolKey = 'discover' | 'advanced' | 'queue' | 'calendar' | 'stats' | 'random' | 'import'
+
+function openTool(tool: ToolKey) {
+  toolsDrawer.value = false
+  if (tool === 'discover') discoverDrawer.value = true
+  if (tool === 'advanced') advancedDiscoveryDrawer.value = true
+  if (tool === 'queue') queueDrawer.value = true
+  if (tool === 'calendar') calendarDrawer.value = true
+  if (tool === 'stats') statsDrawer.value = true
+  if (tool === 'random') randomDrawer.value = true
+  if (tool === 'import') importDrawer.value = true
+}
 </script>
 
 <style scoped>
@@ -335,4 +374,25 @@ function clearFilters() {
 .fade-down-enter-active { transition: all .3s cubic-bezier(.34,1.56,.64,1); }
 .fade-down-leave-active { transition: all .2s ease-in; }
 .fade-down-enter-from, .fade-down-leave-to { opacity: 0; transform: translateY(-8px); }
+
+.tool-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .45rem;
+  border-radius: .75rem;
+  border: 1px solid rgba(255, 255, 255, .08);
+  background: rgba(255, 255, 255, .02);
+  padding: .65rem .7rem;
+  color: rgb(209 213 219);
+  font-size: .82rem;
+  font-weight: 600;
+  transition: all .15s ease;
+}
+
+.tool-btn:hover {
+  border-color: rgba(139, 92, 246, .35);
+  background: rgba(139, 92, 246, .12);
+  color: rgb(233 213 255);
+}
 </style>

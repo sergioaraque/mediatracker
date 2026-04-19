@@ -39,12 +39,12 @@
           <span class="nav-label text-gray-600">Buscar</span>
         </button>
 
-        <!-- Stats -->
-        <button class="nav-item" @click="$emit('stats')">
+        <!-- Tools -->
+        <button class="nav-item" @click="$emit('tools')">
           <div class="nav-icon-wrap text-gray-500">
-            <BarChart2 class="w-5 h-5" />
+            <Compass class="w-5 h-5" />
           </div>
-          <span class="nav-label text-gray-600">Stats</span>
+          <span class="nav-label text-gray-600">Más</span>
         </button>
 
       </div>
@@ -53,10 +53,10 @@
 </template>
 
 <script setup lang="ts">
-import { LayoutGrid, CalendarDays, Plus, Search, BarChart2 } from 'lucide-vue-next'
+import { LayoutGrid, CalendarDays, Plus, Search, Compass } from 'lucide-vue-next'
 
 defineProps<{ active?: string }>()
-defineEmits<{ library: []; calendar: []; add: []; search: []; stats: [] }>()
+defineEmits<{ library: []; calendar: []; add: []; search: []; tools: [] }>()
 </script>
 
 <style scoped>
