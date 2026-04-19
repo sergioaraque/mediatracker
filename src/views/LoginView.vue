@@ -105,9 +105,11 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Clapperboard, Mail, Lock, Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth'
+import { useUiStore } from '@/stores/ui'
 
 const router = useRouter()
 const auth   = useAuthStore()
+const ui     = useUiStore()
 
 const mode     = ref<'login' | 'register'>('login')
 const email    = ref('')
@@ -115,6 +117,36 @@ const password = ref('')
 const showPw   = ref(false)
 const loading  = ref(false)
 const error    = ref('')
+
+function authErrorMessage(rawError: unknown) {
+  const e = rawError as { message?: string; code?: number; type?: string }
+  const msg  = (e?.message ?? '').toLowerCase()
+  const type = (e?.type ?? '').toLowerCase()
+
+  if (msg.includes('invalid credentials') || msg.includes('invalid email or password')) {
+    return 'Email o contraseña incorrectos.'
+  }
+
+  if (msg.includes('user already exists')) {
+    return 'Este email ya está registrado. Prueba iniciando sesión.'
+  }
+
+  if (
+    e?.code === 0 ||
+    msg.includes('failed to fetch') ||
+    msg.includes('networkerror') ||
+    msg.includes('network error') ||
+    type.includes('network')
+  ) {
+    return 'No se puede conectar con el servidor. Revisa tu red y la configuración de Appwrite.'
+  }
+
+  if (msg.includes('invalid url') || msg.includes('missing required parameter')) {
+    return 'La configuración de Appwrite parece incompleta o inválida.'
+  }
+
+  return e?.message || 'Error de autenticación'
+}
 
 async function submit() {
   error.value   = ''
@@ -126,11 +158,9 @@ async function submit() {
       await auth.register(email.value, password.value)
     }
     router.push('/app')
-  } catch (e: any) {
-    const msg = e?.message ?? ''
-    error.value = msg.includes('Invalid URL') || msg.includes('Failed to fetch')
-      ? 'No se puede conectar con el servidor. Revisa tu configuración de Appwrite.'
-      : msg || 'Error de autenticación'
+  } catch (e: unknown) {
+    error.value = authErrorMessage(e)
+    ui.toast(error.value, 'error')
   } finally {
     loading.value = false
   }
