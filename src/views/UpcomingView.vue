@@ -165,7 +165,16 @@ const tabs = [
 ]
 
 watch(activeTab, () => load())
-onMounted(() => { if (!media.all.length) media.fetch(); load() })
+onMounted(async () => {
+  if (!media.all.length) {
+    try {
+      await media.fetch()
+    } catch {
+      ui.toast('No se pudo cargar tu colección', 'error')
+    }
+  }
+  load()
+})
 
 async function load() {
   results.value = []

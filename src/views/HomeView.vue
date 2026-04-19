@@ -278,7 +278,13 @@ const filterBarRef = ref<InstanceType<typeof FilterBar>>()
 
 useAchievements()
 
-onMounted(() => media.fetch())
+onMounted(async () => {
+  try {
+    await media.fetch()
+  } catch {
+    ui.toast('No se pudo cargar tu colección', 'error')
+  }
+})
 
 useKeyboard({
   onNew:     () => { formDrawer.value = true },

@@ -148,6 +148,7 @@ export const useMediaStore = defineStore('media', () => {
     const item = all.value.find(m => m.$id === id)
     if (!item) return
     const prev = item.status
+    const prevFinishedAt = item.finished_at
     const finished_at = status === 'watched' ? new Date().toISOString()
                       : status === 'pending' || status === 'watching' ? null
                       : item.finished_at
@@ -162,7 +163,7 @@ export const useMediaStore = defineStore('media', () => {
       }
     } catch (e) {
       item.status      = prev
-      item.finished_at = item.finished_at
+      item.finished_at = prevFinishedAt
       throw e
     }
   }
