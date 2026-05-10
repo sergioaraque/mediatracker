@@ -15,7 +15,19 @@ router.beforeEach(async (to) => {
   const auth = useAuthStore()
 
   // Ensure auth state is resolved before applying route rules.
-  await auth.init()
+  // Use timeout only to prevent infinite wait if Appwrite is unreachable
+  const initPromise = auth.init()
+  
+  // If already initialized, don't timeout - auth state is cached
+  if (auth.initialized) {
+    await initPromise
+  } else {
+    // First initialization - use 5s timeout as fallback
+    const timeoutPromise = new Promise<void>((resolve) => {
+      setTimeout(() => resolve(), 5000)
+    })
+    await Promise.race([initPromise, timeoutPromise])
+  }
 
   if (to.meta.requiresAuth && !auth.user) return { name: 'login' }
   if (to.name === 'login' && auth.user)   return { name: 'app' }

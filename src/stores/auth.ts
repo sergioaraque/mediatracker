@@ -31,19 +31,27 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function login(email: string, password: string) {
-    await account.createEmailPasswordSession(email, password)
-    user.value = await account.get()
-    initialized.value = true
-    loading.value = false
+    loading.value = true
+    try {
+      await account.createEmailPasswordSession(email, password)
+      user.value = await account.get()
+      initialized.value = true
+    } finally {
+      loading.value = false
+    }
   }
 
   async function register(email: string, password: string) {
-    const name = email.split('@')[0]
-    await account.create('unique()', email, password, name)
-    await account.createEmailPasswordSession(email, password)
-    user.value = await account.get()
-    initialized.value = true
-    loading.value = false
+    loading.value = true
+    try {
+      const name = email.split('@')[0]
+      await account.create('unique()', email, password, name)
+      await account.createEmailPasswordSession(email, password)
+      user.value = await account.get()
+      initialized.value = true
+    } finally {
+      loading.value = false
+    }
   }
 
   async function logout() {
@@ -57,5 +65,5 @@ export const useAuthStore = defineStore('auth', () => {
     await account.updatePassword(next, current)
   }
 
-  return { user, loading, init, login, register, logout, changePassword }
+  return { user, loading, initialized, init, login, register, logout, changePassword }
 })
