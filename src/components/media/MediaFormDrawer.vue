@@ -290,6 +290,7 @@ import { Film, BookOpen } from 'lucide-vue-next'
 import { useMediaStore } from '@/stores/media'
 import { useUiStore } from '@/stores/ui'
 import { getCachedData } from '@/lib/tmdbCache'
+import { isValidUrl, escapeHtml } from '@/lib/security'
 import type { Media, MediaFormData } from '@/types'
 
 const props = defineProps<{
@@ -471,12 +472,48 @@ function close() { emit('update:modelValue', false) }
 
 async function submit() {
   if (!form.value.title.trim() || saving.value) return
+  
+  // Validate title
+  if (form.value.title.trim().length < 2) {
+    ui.toast('El título debe tener al menos 2 caracteres', 'error')
+    return
+  }
+  
+  // Validate year if provided
+  if (form.value.year) {
+    const currentYear = new Date().getFullYear()
+    if (form.value.year < 1888 || form.value.year > currentYear + 2) {
+      ui.toast(`El año debe estar entre 1888 y ${currentYear + 2}`, 'error')
+      return
+    }
+  }
+  
+  // Validate rating if provided
+  if (form.value.rating && (form.value.rating < 1 || form.value.rating > 10)) {
+    ui.toast('La valoración debe estar entre 1 y 10', 'error')
+    return
+  }
+  
+  // Validate URLs if provided
+  if (form.value.cover_url && !isValidUrl(form.value.cover_url)) {
+    ui.toast('URL de portada inválida', 'error')
+    return
+  }
+  
+  if (form.value.trailer_url && !isValidUrl(form.value.trailer_url)) {
+    ui.toast('URL de trailer inválida', 'error')
+    return
+  }
+  
   saving.value = true
   try {
     const data: MediaFormData = {
       ...form.value,
       year:   form.value.year   || null,
       rating: form.value.rating || null,
+      // Escape user-generated content to prevent XSS
+      description: form.value.description ? escapeHtml(form.value.description.substring(0, 1000)) : '',
+      private_note: form.value.private_note ? escapeHtml(form.value.private_note.substring(0, 500)) : '',
     }
     if (editId.value) {
       await store.update(editId.value, data)

@@ -22,6 +22,9 @@
           <StatPill :count="counts.movie"  :avg="avgRatings.movie"  label="Películas" color="bg-blue-500/10 text-blue-300   border-blue-500/20" />
           <StatPill :count="counts.series" :avg="avgRatings.series" label="Series"    color="bg-violet-500/10 text-violet-300 border-violet-500/20" />
           <StatPill :count="counts.book"   :avg="avgRatings.book"   label="Libros"    color="bg-amber-500/10 text-amber-300  border-amber-500/20" />
+          <div class="ml-auto">
+            <SyncIndicator />
+          </div>
         </div>
 
         <!-- User menu -->
@@ -107,6 +110,7 @@ import { useMediaStore } from '@/stores/media'
 import { useUiStore } from '@/stores/ui'
 import { useRouter } from 'vue-router'
 import StatPill from './StatPill.vue'
+import SyncIndicator from './SyncIndicator.vue'
 
 const auth   = useAuthStore()
 const media  = useMediaStore()

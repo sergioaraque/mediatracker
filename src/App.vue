@@ -1,13 +1,16 @@
 <template>
-  <RouterView />
-  <ToastContainer />
-  <PwaInstallBanner />
-  <RatingDialog />
+  <ErrorBoundary>
+    <RouterView />
+    <ToastContainer />
+    <PwaInstallBanner />
+    <RatingDialog />
+  </ErrorBoundary>
 </template>
 
 <script setup lang="ts">
 import { onMounted, onUnmounted } from 'vue'
 import { useMediaStore }   from '@/stores/media'
+import ErrorBoundary       from '@/components/ErrorBoundary.vue'
 import ToastContainer      from '@/components/ui/ToastContainer.vue'
 import PwaInstallBanner    from '@/components/ui/PwaInstallBanner.vue'
 import RatingDialog        from '@/components/ui/RatingDialog.vue'

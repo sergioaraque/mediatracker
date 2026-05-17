@@ -5,6 +5,7 @@ import type { Media, Progress, MediaFormData, StatusHistory }  from '@/types'
 import { useAuthStore }                                        from './auth'
 import { useUiStore }                                          from './ui'
 import { addWatchEntry }                                       from '@/lib/watchHistory'
+import { withTimeout }                                         from '@/lib/retry'
 
 export type SortField = '$createdAt' | 'title' | 'year' | 'rating'
 export type SortOrder = 'ASC' | 'DESC'
@@ -14,6 +15,7 @@ export const useMediaStore = defineStore('media', () => {
 
   const all       = ref<Media[]>([])
   const loading   = ref(false)
+  const syncing   = ref(false)  // Track if syncing with server
   const _updating = ref<Set<string>>(new Set())  // Track updating items to prevent race conditions
 
   const filterType      = ref<string | null>(null)
@@ -147,7 +149,12 @@ export const useMediaStore = defineStore('media', () => {
       item.status      = next
       item.finished_at = finished_at ?? null
       try {
-        await databases.updateDocument(DB_ID, COLL_MEDIA, id, { status: next, finished_at })
+        syncing.value = true
+        await withTimeout(
+          databases.updateDocument(DB_ID, COLL_MEDIA, id, { status: next, finished_at }),
+          10000,
+          'Timeout al cambiar estado del item'
+        )
         logStatusChange(id, prev, next)
         if (next === 'watched') {
           addWatchEntry(id)
@@ -157,9 +164,11 @@ export const useMediaStore = defineStore('media', () => {
         // Revert to original values on failure
         item.status      = prev
         item.finished_at = prevFinishedAt
+        syncing.value    = false
         throw e
       }
     } finally {
+      syncing.value = false
       _updating.value.delete(id)
     }
   }
@@ -240,7 +249,22 @@ export const useMediaStore = defineStore('media', () => {
   }
 
   async function checkReminders() {
-    if (Notification.permission !== 'granted') return
+    // Skip if permission not granted, but offer to request it
+    if (Notification.permission === 'denied') {
+      console.info('[MediaTracker] Notifications denied by user')
+      return
+    }
+    
+    // Request permission if not yet asked
+    if (Notification.permission !== 'granted') {
+      try {
+        const permission = await Notification.requestPermission()
+        if (permission !== 'granted') return
+      } catch {
+        return
+      }
+    }
+    
     const now = new Date()
     for (const m of all.value) {
       if (!m.remind_at) continue
@@ -281,7 +305,7 @@ export const useMediaStore = defineStore('media', () => {
   }
 
   return {
-    all, loading, filtered,
+    all, loading, syncing, filtered,
     filterType, filterStatus, filterMinRating, filterPlatform, search, sortField, sortOrder,
     fetch, create, update, remove, cycleStatus, setStatus, rewatch, getProgress, getStatusHistory, checkReminders,
   }
