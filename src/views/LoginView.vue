@@ -111,17 +111,27 @@ const router = useRouter()
 const auth   = useAuthStore()
 const ui     = useUiStore()
 
-const mode     = ref<'login' | 'register'>('login')
-const email    = ref('')
-const password = ref('')
-const showPw   = ref(false)
-const loading  = ref(false)
-const error    = ref('')
+const mode       = ref<'login' | 'register'>('login')
+const email      = ref('')
+const password   = ref('')
+const showPw     = ref(false)
+const loading    = ref(false)
+const error      = ref('')
+let   lastSubmit = 0 // Debounce para evitar múltiples clics
 
 function authErrorMessage(rawError: unknown) {
   const e = rawError as { message?: string; code?: number; type?: string }
   const msg  = (e?.message ?? '').toLowerCase()
   const type = (e?.type ?? '').toLowerCase()
+
+  // Detectar errores CORS específicamente
+  if (
+    msg.includes('cors') ||
+    msg.includes('access to fetch') ||
+    msg.includes('access-control-allow-origin')
+  ) {
+    return '⚠️ Problema de CORS: Recarga la página e intenta de nuevo. Si persiste, contacta al administrador.'
+  }
 
   if (msg.includes('invalid credentials') || msg.includes('invalid email or password')) {
     return 'Email o contraseña incorrectos.'
@@ -136,9 +146,10 @@ function authErrorMessage(rawError: unknown) {
     msg.includes('failed to fetch') ||
     msg.includes('networkerror') ||
     msg.includes('network error') ||
+    msg.includes('err_failed') ||
     type.includes('network')
   ) {
-    return 'No se puede conectar con el servidor. Revisa tu red y la configuración de Appwrite.'
+    return '📡 Error de conexión. Revisa tu red o intenta de nuevo en unos segundos.'
   }
 
   if (msg.includes('invalid url') || msg.includes('missing required parameter')) {
@@ -149,6 +160,11 @@ function authErrorMessage(rawError: unknown) {
 }
 
 async function submit() {
+  // Debounce: evita múltiples clics rápidos
+  const now = Date.now()
+  if (now - lastSubmit < 1000) return
+  lastSubmit = now
+
   error.value   = ''
   loading.value = true
   try {
@@ -168,6 +184,10 @@ async function submit() {
     } else {
       await auth.register(email.value, password.value)
     }
+    
+    // Limpiar campos en caso de éxito
+    email.value = ''
+    password.value = ''
     router.push('/app')
   } catch (e: unknown) {
     error.value = authErrorMessage(e)

@@ -30,10 +30,24 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function login(email: string, password: string) {
+  async function login(email: string, password: string, retries = 2) {
     loading.value = true
     try {
-      await account.createEmailPasswordSession(email, password)
+      try {
+        await account.createEmailPasswordSession(email, password)
+      } catch (e: unknown) {
+        // Reintentar una vez para fallos de red transitorios
+        if (retries > 0) {
+          const error = e as { message?: string }
+          const msg = (error?.message ?? '').toLowerCase()
+          if (msg.includes('failed to fetch') || msg.includes('networkerror') || msg.includes('err_failed')) {
+            console.warn(`[Auth] Reintentando login después de fallo de red...`)
+            await new Promise(r => setTimeout(r, 500))
+            return login(email, password, retries - 1)
+          }
+        }
+        throw e
+      }
       user.value = await account.get()
       initialized.value = true
     } finally {
@@ -41,12 +55,27 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function register(email: string, password: string) {
+  async function register(email: string, password: string, retries = 2) {
     loading.value = true
     try {
       const name = email.split('@')[0]
       await account.create('unique()', email, password, name)
-      await account.createEmailPasswordSession(email, password)
+      
+      try {
+        await account.createEmailPasswordSession(email, password)
+      } catch (e: unknown) {
+        // Reintentar una vez para fallos de red transitorios
+        if (retries > 0) {
+          const error = e as { message?: string }
+          const msg = (error?.message ?? '').toLowerCase()
+          if (msg.includes('failed to fetch') || msg.includes('networkerror') || msg.includes('err_failed')) {
+            console.warn(`[Auth] Reintentando sesión después de crear cuenta...`)
+            await new Promise(r => setTimeout(r, 500))
+            return register(email, password, retries - 1)
+          }
+        }
+        throw e
+      }
       user.value = await account.get()
       initialized.value = true
     } finally {
