@@ -1,5 +1,6 @@
 .env
 .env.local
+.env**
 public/js/config.js
 dist/
 node_modules/

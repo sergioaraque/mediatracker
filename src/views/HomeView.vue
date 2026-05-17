@@ -92,6 +92,37 @@
         </div>
       </Transition>
 
+      <!-- Continuar viendo banner -->
+      <Transition name="fade-down">
+        <div
+          v-if="recentMedia && recentMedia.$id !== nextInQueue?.$id"
+          class="mb-6 flex items-center gap-4 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/25 hover:border-amber-400/40 transition-colors"
+        >
+          <div class="w-10 h-14 rounded-lg overflow-hidden shrink-0 border border-white/10">
+            <img v-if="recentMedia.cover_url" :src="recentMedia.cover_url" :alt="recentMedia.title" class="w-full h-full object-cover" />
+            <div v-else class="w-full h-full flex items-center justify-center bg-gray-800 text-lg">
+              {{ recentMedia.type === 'series' ? '📺' : recentMedia.type === 'book' ? '📚' : '🎬' }}
+            </div>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-[11px] font-bold text-amber-400 uppercase tracking-wider mb-0.5">Continuar viendo</p>
+            <p class="text-sm font-semibold text-white truncate">{{ recentMedia.title }}</p>
+            <p v-if="recentMedia.status === 'watching' && recentMedia.type === 'series'" class="text-xs text-gray-500 mt-0.5">
+              T{{ recentMedia.current_season }} E{{ recentMedia.current_episode }}
+            </p>
+            <p v-else class="text-xs text-gray-500 mt-0.5">{{ recentMedia.status === 'watching' ? 'Viendo' : recentMedia.status === 'pending' ? 'Por empezar' : 'Completado' }}</p>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <button
+              @click="openDetail(recentMedia!)"
+              class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border border-amber-500/40 text-amber-300 hover:bg-amber-500/20 transition-colors"
+            >
+              Retomar
+            </button>
+          </div>
+        </div>
+      </Transition>
+
       <!-- Section banner -->
       <SectionBanner :type="media.filterType" />
 
@@ -335,6 +366,8 @@ const nextInQueue = computed(() => {
   }
   return null
 })
+
+const recentMedia = computed(() => media.recent.getRecentMedia(media.all))
 
 const formDrawer    = ref(false)
 const detailDrawer  = ref(false)

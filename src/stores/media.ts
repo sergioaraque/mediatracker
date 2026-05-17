@@ -6,12 +6,14 @@ import { useAuthStore }                                        from './auth'
 import { useUiStore }                                          from './ui'
 import { addWatchEntry }                                       from '@/lib/watchHistory'
 import { withTimeout }                                         from '@/lib/retry'
+import { useRecentMedia }                                      from '@/composables/useRecentMedia'
 
 export type SortField = '$createdAt' | 'title' | 'year' | 'rating'
 export type SortOrder = 'ASC' | 'DESC'
 
 export const useMediaStore = defineStore('media', () => {
   const auth = useAuthStore()
+  const recent = useRecentMedia()
 
   const all       = ref<Media[]>([])
   const loading   = ref(false)
@@ -100,6 +102,7 @@ export const useMediaStore = defineStore('media', () => {
     const mediaData = stripMeta(rawData as Record<string, unknown>)
     try {
       const doc = await databases.createDocument(DB_ID, COLL_MEDIA, ID.unique(), mediaData, perms())
+      recent.saveRecentMediaId(doc.$id)
       if (data.type === 'series') await upsertProgress(doc.$id, { current_season: data.current_season, current_episode: data.current_episode, total_seasons, total_episodes, notes: progress_notes }, perms())
       await fetch()
     } catch (e) {
@@ -113,6 +116,7 @@ export const useMediaStore = defineStore('media', () => {
     const mediaData = stripMeta(rawData as Record<string, unknown>)
     try {
       await databases.updateDocument(DB_ID, COLL_MEDIA, id, mediaData)
+      recent.saveRecentMediaId(id)
       if (data.type === 'series') await upsertProgress(id, { current_season: data.current_season, current_episode: data.current_episode, total_seasons, total_episodes, notes: progress_notes }, perms())
       await fetch()
     } catch (e) {
@@ -155,6 +159,7 @@ export const useMediaStore = defineStore('media', () => {
           10000,
           'Timeout al cambiar estado del item'
         )
+        recent.saveRecentMediaId(id)
         logStatusChange(id, prev, next)
         if (next === 'watched') {
           addWatchEntry(id)
@@ -185,6 +190,7 @@ export const useMediaStore = defineStore('media', () => {
       item.status = 'watching'
       try {
         await databases.updateDocument(DB_ID, COLL_MEDIA, id, { status: 'watching' })
+        recent.saveRecentMediaId(id)
         logStatusChange(id, prev, 'watching')
       } catch (e) {
         item.status = prev
@@ -212,6 +218,7 @@ export const useMediaStore = defineStore('media', () => {
       item.finished_at = finished_at ?? null
       try {
         await databases.updateDocument(DB_ID, COLL_MEDIA, id, { status, finished_at })
+        recent.saveRecentMediaId(id)
         logStatusChange(id, prev, status)
         if (status === 'watched') {
           addWatchEntry(id)
@@ -308,5 +315,6 @@ export const useMediaStore = defineStore('media', () => {
     all, loading, syncing, filtered,
     filterType, filterStatus, filterMinRating, filterPlatform, search, sortField, sortOrder,
     fetch, create, update, remove, cycleStatus, setStatus, rewatch, getProgress, getStatusHistory, checkReminders,
+    recent,
   }
 })
