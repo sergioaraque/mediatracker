@@ -1,7 +1,12 @@
 const KEY = 'mt_watch_queue'
 
 export function getQueue(): string[] {
-  try { return JSON.parse(localStorage.getItem(KEY) ?? '[]') }
+  try {
+    const data = JSON.parse(localStorage.getItem(KEY) ?? '[]')
+    // Validate structure: ensure it's an array of strings
+    if (!Array.isArray(data)) return []
+    return data.every(id => typeof id === 'string') ? data : []
+  }
   catch { return [] }
 }
 

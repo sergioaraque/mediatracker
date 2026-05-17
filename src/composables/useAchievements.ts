@@ -43,8 +43,12 @@ export function useAchievements() {
   const media = useMediaStore()
   const ui    = useUiStore()
 
-  watch(() => media.all, (items) => {
+  // Watch only the length to avoid deep reactivity performance hit
+  let lastLength = 0
+  watch(() => media.all.length, (newLength) => {
+    const items = media.all
     if (!items.length) return
+    
     const unlocked = loadUnlocked()
     let changed    = false
     for (const a of ACHIEVEMENTS) {
@@ -57,5 +61,6 @@ export function useAchievements() {
       }
     }
     if (changed) saveUnlocked(unlocked)
-  }, { deep: true })
+    lastLength = newLength
+  })
 }

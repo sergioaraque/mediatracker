@@ -289,6 +289,7 @@ import { X, ChevronDown, Star, Tv, Loader2, Search, AlertTriangle, Bell, Youtube
 import { Film, BookOpen } from 'lucide-vue-next'
 import { useMediaStore } from '@/stores/media'
 import { useUiStore } from '@/stores/ui'
+import { getCachedData } from '@/lib/tmdbCache'
 import type { Media, MediaFormData } from '@/types'
 
 const props = defineProps<{
@@ -395,12 +396,23 @@ const searchQ       = ref('')
 const searchResults = ref<SearchResult[]>([])
 const searchLoading = ref(false)
 const searchOpen    = ref(false)
+let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null
 
 const searchPlaceholder = computed(() => ({
   movie:  'Título de película…',
   series: 'Título de serie…',
   book:   '',
 }[form.value.type]))
+
+// Debounced search: wait 300ms after user stops typing
+watch(searchQ, () => {
+  if (searchDebounceTimer) clearTimeout(searchDebounceTimer)
+  searchDebounceTimer = setTimeout(() => {
+    if (searchQ.value.trim().length >= 2) {
+      runSearch()
+    }
+  }, 300)
+})
 
 async function runSearch() {
   if (!hasTmdbKey || !searchQ.value.trim() || searchLoading.value) return
@@ -415,20 +427,24 @@ async function runSearch() {
 
 async function searchTmdb(q: string, type: 'movie' | 'series'): Promise<SearchResult[]> {
   const endpoint = type === 'movie' ? 'movie' : 'tv'
-  const res = await fetch(
-    `https://api.themoviedb.org/3/search/${endpoint}?api_key=${TMDB_KEY}&query=${encodeURIComponent(q)}&language=es-ES&page=1`
-  )
-  if (!res.ok) return []
-  const data = await res.json()
-  return (data.results ?? []).slice(0, 6).map((r: any) => ({
-    id:          String(r.id),
-    title:       r.title ?? r.name ?? '',
-    year:        (r.release_date ?? r.first_air_date ?? '').slice(0, 4),
-    genre:       (r.genre_ids ?? []).slice(0, 2).map((id: number) => TMDB_GENRES[id]).filter(Boolean).join(', '),
-    poster:      r.poster_path ? `https://image.tmdb.org/t/p/w185${r.poster_path}` : '',
-    cover:       r.poster_path ? `https://image.tmdb.org/t/p/w500${r.poster_path}` : '',
-    description: r.overview ?? '',
-  }))
+  const cacheKey = `tmdb:${type}:${q.toLowerCase()}`
+  
+  return getCachedData(cacheKey, async () => {
+    const res = await fetch(
+      `https://api.themoviedb.org/3/search/${endpoint}?api_key=${TMDB_KEY}&query=${encodeURIComponent(q)}&language=es-ES&page=1`
+    )
+    if (!res.ok) return []
+    const data = await res.json()
+    return (data.results ?? []).slice(0, 6).map((r: any) => ({
+      id:          String(r.id),
+      title:       r.title ?? r.name ?? '',
+      year:        (r.release_date ?? r.first_air_date ?? '').slice(0, 4),
+      genre:       (r.genre_ids ?? []).slice(0, 2).map((id: number) => TMDB_GENRES[id]).filter(Boolean).join(', '),
+      poster:      r.poster_path ? `https://image.tmdb.org/t/p/w185${r.poster_path}` : '',
+      cover:       r.poster_path ? `https://image.tmdb.org/t/p/w500${r.poster_path}` : '',
+      description: r.overview ?? '',
+    }))
+  })
 }
 
 

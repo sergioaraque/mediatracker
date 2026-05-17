@@ -17,7 +17,21 @@
 
     <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 pb-28 md:pb-8">
 
-      <!-- Quick start hint -->
+      <!-- Offline indicator -->
+      <Transition name="fade-down">
+        <div
+          v-if="!isOnline"
+          class="mb-6 rounded-2xl border border-red-500/25 bg-red-500/10 p-4 flex items-center gap-3"
+        >
+          <div class="rounded-lg bg-red-500/20 p-2 shrink-0">
+            <WifiOff class="w-4 h-4 text-red-300" />
+          </div>
+          <div>
+            <p class="text-sm font-semibold text-red-100">Sin conexión</p>
+            <p class="text-xs text-red-200/80 mt-0.5">Los cambios se sincronizarán cuando vuelvas a estar conectado</p>
+          </div>
+        </div>
+      </Transition>
       <Transition name="fade-down">
         <div
           v-if="showQuickStart"
@@ -269,7 +283,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { Inbox, Plus, SearchX, Trash2, X, Compass, Sparkles, ListOrdered, CalendarDays, BarChart2, Dices, Upload, Lightbulb, Keyboard } from 'lucide-vue-next'
+import { Inbox, Plus, SearchX, Trash2, X, Compass, Sparkles, ListOrdered, CalendarDays, BarChart2, Dices, Upload, Lightbulb, Keyboard, Wifi, WifiOff } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 import { useMediaStore } from '@/stores/media'
 import { useUiStore }    from '@/stores/ui'
@@ -277,6 +291,7 @@ import { storeToRefs }   from 'pinia'
 import { useKeyboard }   from '@/composables/useKeyboard'
 import { useAchievements } from '@/composables/useAchievements'
 import { useQueue }        from '@/composables/useQueue'
+import { useOnlineStatus } from '@/composables/useOnlineStatus'
 import type { Media } from '@/types'
 import AppHeader          from '@/components/layout/AppHeader.vue'
 import AppSidebar         from '@/components/layout/AppSidebar.vue'
@@ -302,6 +317,7 @@ const router = useRouter()
 const media  = useMediaStore()
 const ui     = useUiStore()
 const { showCommandPalette, sidebarExpanded } = storeToRefs(ui)
+const { isOnline } = useOnlineStatus()
 
 // Adjust grid columns based on sidebar state so cards don't get squished
 const gridCols = computed(() =>

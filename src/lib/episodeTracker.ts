@@ -4,7 +4,22 @@ const KEY = 'mt_ep_tracker'
 type EpData = Record<string, Record<string, number[]>>
 
 function load(): EpData {
-  try { return JSON.parse(localStorage.getItem(KEY) || '{}') }
+  try {
+    const data = JSON.parse(localStorage.getItem(KEY) || '{}')
+    // Validate structure: ensure all values are objects with number[] arrays
+    if (typeof data !== 'object' || data === null) return {}
+    const cleaned: EpData = {}
+    for (const [mediaId, seasons] of Object.entries(data)) {
+      if (typeof seasons !== 'object' || seasons === null) continue
+      cleaned[mediaId] = {}
+      for (const [season, eps] of Object.entries(seasons)) {
+        if (Array.isArray(eps) && eps.every(e => typeof e === 'number')) {
+          cleaned[mediaId][season] = eps
+        }
+      }
+    }
+    return cleaned
+  }
   catch { return {} }
 }
 

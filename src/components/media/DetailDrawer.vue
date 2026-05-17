@@ -283,7 +283,10 @@ watch(() => props.media, async (m) => {
   const currentId = m.$id
   store.getStatusHistory(currentId).then(h => {
     if (props.media?.$id === currentId) history.value = h
-  }).catch((e) => console.warn('[DetailDrawer] getStatusHistory failed:', e))
+  }).catch((e) => {
+    console.warn('[DetailDrawer] getStatusHistory failed:', e)
+    ui.toast('No se pudo cargar el historial de cambios', 'error')
+  })
 }, { immediate: true })
 
 const trailerPlaying = ref(false)

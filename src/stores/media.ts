@@ -12,8 +12,9 @@ export type SortOrder = 'ASC' | 'DESC'
 export const useMediaStore = defineStore('media', () => {
   const auth = useAuthStore()
 
-  const all     = ref<Media[]>([])
-  const loading = ref(false)
+  const all       = ref<Media[]>([])
+  const loading   = ref(false)
+  const _updating = ref<Set<string>>(new Set())  // Track updating items to prevent race conditions
 
   const filterType      = ref<string | null>(null)
   const filterStatus    = ref<string | null>(null)
@@ -61,21 +62,30 @@ export const useMediaStore = defineStore('media', () => {
     return r
   })
 
-  async function fetch() {
+  async function fetch(pageSize: number = 500) {
     loading.value = true
     try {
       const res = await databases.listDocuments(DB_ID, COLL_MEDIA, [
-        Query.limit(500),
+        Query.limit(pageSize),
         Query.orderDesc('$createdAt'),
       ])
       all.value = res.documents as unknown as Media[]
+      
+      // Log if more items exist (pagination hint)
+      if (res.total > pageSize) {
+        console.warn(`[MediaTracker] ${res.total} items exist but only ${pageSize} loaded. Implement pagination if needed.`)
+      }
     } finally {
       loading.value = false
     }
   }
 
   function perms() {
-    const uid = auth.user!.$id
+    const uid = auth.user?.$id
+    if (!uid) {
+      console.error('[MediaTracker] perms() called without authenticated user')
+      return []
+    }
     return [Permission.read(Role.user(uid)), Permission.update(Role.user(uid)), Permission.delete(Role.user(uid))]
   }
 
@@ -86,17 +96,27 @@ export const useMediaStore = defineStore('media', () => {
   async function create(data: MediaFormData) {
     const { total_seasons, total_episodes, progress_notes, ...rawData } = data
     const mediaData = stripMeta(rawData as Record<string, unknown>)
-    const doc = await databases.createDocument(DB_ID, COLL_MEDIA, ID.unique(), mediaData, perms())
-    if (data.type === 'series') await upsertProgress(doc.$id, { current_season: data.current_season, current_episode: data.current_episode, total_seasons, total_episodes, notes: progress_notes }, perms())
-    await fetch()
+    try {
+      const doc = await databases.createDocument(DB_ID, COLL_MEDIA, ID.unique(), mediaData, perms())
+      if (data.type === 'series') await upsertProgress(doc.$id, { current_season: data.current_season, current_episode: data.current_episode, total_seasons, total_episodes, notes: progress_notes }, perms())
+      await fetch()
+    } catch (e) {
+      console.error('[MediaTracker] Failed to create media:', e)
+      throw e
+    }
   }
 
   async function update(id: string, data: MediaFormData) {
     const { total_seasons, total_episodes, progress_notes, ...rawData } = data
     const mediaData = stripMeta(rawData as Record<string, unknown>)
-    await databases.updateDocument(DB_ID, COLL_MEDIA, id, mediaData)
-    if (data.type === 'series') await upsertProgress(id, { current_season: data.current_season, current_episode: data.current_episode, total_seasons, total_episodes, notes: progress_notes }, perms())
-    await fetch()
+    try {
+      await databases.updateDocument(DB_ID, COLL_MEDIA, id, mediaData)
+      if (data.type === 'series') await upsertProgress(id, { current_season: data.current_season, current_episode: data.current_episode, total_seasons, total_episodes, notes: progress_notes }, perms())
+      await fetch()
+    } catch (e) {
+      console.error('[MediaTracker] Failed to update media:', e)
+      throw e
+    }
   }
 
   async function remove(id: string) {
@@ -109,68 +129,92 @@ export const useMediaStore = defineStore('media', () => {
   }
 
   async function cycleStatus(id: string) {
-    const cycle: Record<string, string> = { pending: 'watching', watching: 'watched', watched: 'pending', dropped: 'watching' }
-    const item = all.value.find(m => m.$id === id)
-    if (!item) return
-    const prev           = item.status
-    const prevFinishedAt = item.finished_at          // save before mutation
-    const next = cycle[prev] as Media['status']
-    const finished_at = next === 'watched' ? new Date().toISOString()
-                      : next === 'pending' || next === 'watching' ? null
-                      : item.finished_at
-    // Optimistic update
-    item.status      = next
-    item.finished_at = finished_at ?? null
+    // Prevent race condition from multiple clicks
+    if (_updating.value.has(id)) return
+    _updating.value.add(id)
+
     try {
-      await databases.updateDocument(DB_ID, COLL_MEDIA, id, { status: next, finished_at })
-      logStatusChange(id, prev, next)
-      if (next === 'watched') {
-        addWatchEntry(id)
-        useUiStore().pendingRatingMedia = item
+      const cycle: Record<string, string> = { pending: 'watching', watching: 'watched', watched: 'pending', dropped: 'watching' }
+      const item = all.value.find(m => m.$id === id)
+      if (!item) return
+      const prev           = item.status
+      const prevFinishedAt = item.finished_at          // save before mutation
+      const next = cycle[prev] as Media['status']
+      const finished_at = next === 'watched' ? new Date().toISOString()
+                        : next === 'pending' || next === 'watching' ? null
+                        : item.finished_at
+      // Optimistic update
+      item.status      = next
+      item.finished_at = finished_at ?? null
+      try {
+        await databases.updateDocument(DB_ID, COLL_MEDIA, id, { status: next, finished_at })
+        logStatusChange(id, prev, next)
+        if (next === 'watched') {
+          addWatchEntry(id)
+          useUiStore().pendingRatingMedia = item
+        }
+      } catch (e) {
+        // Revert to original values on failure
+        item.status      = prev
+        item.finished_at = prevFinishedAt
+        throw e
       }
-    } catch (e) {
-      // Revert to original values on failure
-      item.status      = prev
-      item.finished_at = prevFinishedAt
-      throw e
+    } finally {
+      _updating.value.delete(id)
     }
   }
 
   async function rewatch(id: string) {
-    const item = all.value.find(m => m.$id === id)
-    if (!item) return
-    const prev = item.status
-    item.status = 'watching'
+    // Prevent race condition from multiple clicks
+    if (_updating.value.has(id)) return
+    _updating.value.add(id)
+
     try {
-      await databases.updateDocument(DB_ID, COLL_MEDIA, id, { status: 'watching' })
-      logStatusChange(id, prev, 'watching')
-    } catch (e) {
-      item.status = prev
-      throw e
+      const item = all.value.find(m => m.$id === id)
+      if (!item) return
+      const prev = item.status
+      item.status = 'watching'
+      try {
+        await databases.updateDocument(DB_ID, COLL_MEDIA, id, { status: 'watching' })
+        logStatusChange(id, prev, 'watching')
+      } catch (e) {
+        item.status = prev
+        throw e
+      }
+    } finally {
+      _updating.value.delete(id)
     }
   }
 
   async function setStatus(id: string, status: Media['status']) {
-    const item = all.value.find(m => m.$id === id)
-    if (!item) return
-    const prev = item.status
-    const prevFinishedAt = item.finished_at
-    const finished_at = status === 'watched' ? new Date().toISOString()
-                      : status === 'pending' || status === 'watching' ? null
-                      : item.finished_at
-    item.status      = status
-    item.finished_at = finished_at ?? null
+    // Prevent race condition from multiple clicks
+    if (_updating.value.has(id)) return
+    _updating.value.add(id)
+
     try {
-      await databases.updateDocument(DB_ID, COLL_MEDIA, id, { status, finished_at })
-      logStatusChange(id, prev, status)
-      if (status === 'watched') {
-        addWatchEntry(id)
-        useUiStore().pendingRatingMedia = item
+      const item = all.value.find(m => m.$id === id)
+      if (!item) return
+      const prev = item.status
+      const prevFinishedAt = item.finished_at
+      const finished_at = status === 'watched' ? new Date().toISOString()
+                        : status === 'pending' || status === 'watching' ? null
+                        : item.finished_at
+      item.status      = status
+      item.finished_at = finished_at ?? null
+      try {
+        await databases.updateDocument(DB_ID, COLL_MEDIA, id, { status, finished_at })
+        logStatusChange(id, prev, status)
+        if (status === 'watched') {
+          addWatchEntry(id)
+          useUiStore().pendingRatingMedia = item
+        }
+      } catch (e) {
+        item.status      = prev
+        item.finished_at = prevFinishedAt
+        throw e
       }
-    } catch (e) {
-      item.status      = prev
-      item.finished_at = prevFinishedAt
-      throw e
+    } finally {
+      _updating.value.delete(id)
     }
   }
 
@@ -202,14 +246,22 @@ export const useMediaStore = defineStore('media', () => {
       if (!m.remind_at) continue
       const due = new Date(m.remind_at)
       if (due <= now) {
-        new Notification(`⏰ Recordatorio: ${m.title}`, {
-          body: m.type === 'movie' ? 'Tienes pendiente ver esta película' : m.type === 'series' ? 'Continúa con esta serie' : 'Retoma este libro',
-          icon: m.cover_url ?? '/icon.svg',
-          tag:  m.$id,
-        })
-        // Clear the reminder after firing
-        await databases.updateDocument(DB_ID, COLL_MEDIA, m.$id, { remind_at: null })
-        m.remind_at = null
+        try {
+          new Notification(`⏰ Recordatorio: ${m.title}`, {
+            body: m.type === 'movie' ? 'Tienes pendiente ver esta película' : m.type === 'series' ? 'Continúa con esta serie' : 'Retoma este libro',
+            icon: m.cover_url ?? '/icon.svg',
+            tag:  m.$id,
+          })
+          // Clear the reminder after firing
+          try {
+            await databases.updateDocument(DB_ID, COLL_MEDIA, m.$id, { remind_at: null })
+            m.remind_at = null
+          } catch (e) {
+            console.warn('[MediaTracker] Failed to clear reminder:', e)
+          }
+        } catch (e) {
+          console.warn('[MediaTracker] Failed to show notification:', e)
+        }
       }
     }
   }

@@ -152,6 +152,17 @@ async function submit() {
   error.value   = ''
   loading.value = true
   try {
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email.value)) {
+      throw new Error('El email no es válido')
+    }
+    
+    // Validate password length
+    if (password.value.length < 8) {
+      throw new Error('La contraseña debe tener al menos 8 caracteres')
+    }
+    
     if (mode.value === 'login') {
       await auth.login(email.value, password.value)
     } else {
