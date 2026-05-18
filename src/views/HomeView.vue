@@ -57,6 +57,46 @@
         </div>
       </Transition>
 
+      <!-- Actividad reciente -->
+      <Transition name="fade-down">
+        <section
+          v-if="activitySummary.recentTotal > 0"
+          class="mb-6 rounded-2xl border border-sky-500/20 bg-sky-500/8 p-4 sm:p-5"
+        >
+          <div class="flex items-start justify-between gap-4 mb-4">
+            <div>
+              <p class="text-[11px] font-bold text-sky-400 uppercase tracking-wider mb-1">Actividad reciente</p>
+              <p class="text-sm text-gray-300">
+                Has registrado {{ activitySummary.recentTotal }} eventos en los últimos 7 días.
+              </p>
+            </div>
+            <button
+              @click="openTool('stats')"
+              class="hidden sm:inline-flex items-center gap-2 rounded-xl border border-sky-500/25 bg-sky-500/10 px-3 py-2 text-xs font-bold text-sky-300 hover:bg-sky-500/15 transition-colors"
+            >
+              <BarChart2 class="w-3.5 h-3.5" />
+              Ver estadísticas
+            </button>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="rounded-full border border-sky-500/25 bg-sky-500/10 px-3 py-1.5 text-xs font-bold text-sky-300">
+              {{ activitySummary.recentTotal }} esta semana
+            </span>
+            <span class="rounded-full border border-white/8 bg-black/20 px-3 py-1.5 text-xs text-gray-300">
+              {{ activitySummary.total }} en total
+            </span>
+            <span
+              v-for="item in activitySummary.topTitles"
+              :key="item.id"
+              class="rounded-full border border-white/8 bg-black/20 px-3 py-1.5 text-xs text-gray-300"
+            >
+              {{ item.title }} · {{ item.count }}
+            </span>
+          </div>
+        </section>
+      </Transition>
+
       <!-- Qué ver ahora -->
       <Transition name="fade-down">
         <section
@@ -377,6 +417,7 @@ import { useAchievements } from '@/composables/useAchievements'
 import { useQueue }        from '@/composables/useQueue'
 import { useOnlineStatus } from '@/composables/useOnlineStatus'
 import type { Media } from '@/types'
+import { getWatchActivitySummary } from '@/lib/watchHistory'
 import AppHeader          from '@/components/layout/AppHeader.vue'
 import AppSidebar         from '@/components/layout/AppSidebar.vue'
 import FilterBar          from '@/components/layout/FilterBar.vue'
@@ -421,6 +462,23 @@ const nextInQueue = computed(() => {
 })
 
 const recentMedia = computed(() => media.recent.getRecentMedia(media.all))
+
+const activitySummary = computed(() => {
+  const summary = getWatchActivitySummary(7)
+  const topTitles = summary.topMediaIds
+    .map(mediaId => {
+      const item = media.all.find(m => m.$id === mediaId)
+      if (!item) return null
+      return {
+        id: mediaId,
+        title: item.title,
+        count: summary.recentCounts[mediaId] ?? 0,
+      }
+    })
+    .filter((item): item is { id: string; title: string; count: number } => item !== null)
+
+  return { ...summary, topTitles }
+})
 
 const queuedIds = computed(() => new Set(queueIds.value))
 

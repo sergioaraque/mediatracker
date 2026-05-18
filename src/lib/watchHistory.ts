@@ -2,6 +2,14 @@ export interface WatchEntry {
   watchedAt: string
 }
 
+export interface WatchActivitySummary {
+  total: number
+  recentTotal: number
+  topMediaIds: string[]
+  recentCounts: Record<string, number>
+  lastWatchedAt: string | null
+}
+
 const KEY = 'mt_watch_history'
 
 function load(): Record<string, WatchEntry[]> {
@@ -29,4 +37,45 @@ export function addWatchEntry(mediaId: string): void {
 
 export function getWatchHistory(mediaId: string): WatchEntry[] {
   return load()[mediaId] ?? []
+}
+
+export function getWatchActivitySummary(days = 7): WatchActivitySummary {
+  const data = load()
+  const cutoff = Date.now() - (days * 24 * 60 * 60 * 1000)
+  const recentCounts = new Map<string, number>()
+
+  let total = 0
+  let recentTotal = 0
+  let lastWatchedAt: string | null = null
+
+  for (const [mediaId, entries] of Object.entries(data)) {
+    total += entries.length
+
+    for (const entry of entries) {
+      const timestamp = Date.parse(entry.watchedAt)
+      if (Number.isNaN(timestamp)) continue
+
+      if (!lastWatchedAt || timestamp > Date.parse(lastWatchedAt)) {
+        lastWatchedAt = entry.watchedAt
+      }
+
+      if (timestamp >= cutoff) {
+        recentTotal += 1
+        recentCounts.set(mediaId, (recentCounts.get(mediaId) ?? 0) + 1)
+      }
+    }
+  }
+
+  const topMediaIds = [...recentCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([mediaId]) => mediaId)
+    .slice(0, 3)
+
+  return {
+    total,
+    recentTotal,
+    topMediaIds,
+    recentCounts: Object.fromEntries(recentCounts),
+    lastWatchedAt,
+  }
 }
