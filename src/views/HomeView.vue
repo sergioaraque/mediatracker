@@ -57,6 +57,59 @@
         </div>
       </Transition>
 
+      <!-- Qué ver ahora -->
+      <Transition name="fade-down">
+        <section
+          v-if="recommendedNow.length"
+          class="mb-6 rounded-2xl border border-emerald-500/20 bg-emerald-500/8 p-4 sm:p-5"
+        >
+          <div class="flex items-start justify-between gap-4 mb-4">
+            <div>
+              <p class="text-[11px] font-bold text-emerald-400 uppercase tracking-wider mb-1">Qué ver ahora</p>
+              <p class="text-sm text-gray-300">Sugerencias ordenadas por tu actividad, cola y estado actual.</p>
+            </div>
+            <button
+              @click="openTool('discover')"
+              class="hidden sm:inline-flex items-center gap-2 rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-3 py-2 text-xs font-bold text-emerald-300 hover:bg-emerald-500/15 transition-colors"
+            >
+              <Sparkles class="w-3.5 h-3.5" />
+              Descubrir más
+            </button>
+          </div>
+
+          <div class="grid gap-3 md:grid-cols-3">
+            <button
+              v-for="item in recommendedNow"
+              :key="item.$id"
+              @click="openDetail(item)"
+              class="group flex items-start gap-3 rounded-2xl border border-white/8 bg-black/20 p-3 text-left transition-all hover:border-emerald-400/35 hover:bg-white/5"
+            >
+              <div class="w-12 h-16 rounded-lg overflow-hidden shrink-0 border border-white/10">
+                <img v-if="item.cover_url" :src="item.cover_url" :alt="item.title" class="w-full h-full object-cover" />
+                <div v-else class="w-full h-full flex items-center justify-center bg-gray-800 text-lg">
+                  {{ item.type === 'series' ? '📺' : item.type === 'book' ? '📚' : '🎬' }}
+                </div>
+              </div>
+
+              <div class="min-w-0 flex-1">
+                <div class="flex items-start justify-between gap-2">
+                  <p class="text-sm font-semibold text-white truncate group-hover:text-emerald-200 transition-colors">{{ item.title }}</p>
+                  <span class="shrink-0 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-300">{{ item.reason }}</span>
+                </div>
+                <p class="mt-1 text-xs text-gray-400">
+                  {{ item.subtitle }}
+                </p>
+                <div class="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-gray-500">
+                  <span v-if="item.year">{{ item.year }}</span>
+                  <span v-if="item.rating">★ {{ item.rating.toFixed(1) }}</span>
+                  <span class="capitalize">{{ item.type }}</span>
+                </div>
+              </div>
+            </button>
+          </div>
+        </section>
+      </Transition>
+
       <!-- Siguiente a ver banner -->
       <Transition name="fade-down">
         <div
@@ -368,6 +421,73 @@ const nextInQueue = computed(() => {
 })
 
 const recentMedia = computed(() => media.recent.getRecentMedia(media.all))
+
+const queuedIds = computed(() => new Set(queueIds.value))
+
+type SuggestedNowItem = Media & {
+  reason: string
+  subtitle: string
+  score: number
+}
+
+function daysSince(value: string | null): number {
+  if (!value) return Number.POSITIVE_INFINITY
+  const delta = Date.now() - new Date(value).getTime()
+  return Number.isNaN(delta) ? Number.POSITIVE_INFINITY : Math.max(0, delta / (1000 * 60 * 60 * 24))
+}
+
+function recommendationReason(item: Media): string {
+  if (queuedIds.value.has(item.$id)) return 'En cola'
+  if (item.status === 'watching') return 'En marcha'
+  if (item.rating && item.rating >= 8) return 'Top rated'
+  if (item.finished_at && daysSince(item.finished_at) <= 30) return 'Reciente'
+  return 'Pendiente'
+}
+
+function recommendationSubtitle(item: Media): string {
+  if (item.status === 'watching' && item.type === 'series') {
+    return item.current_season && item.current_episode
+      ? `T${item.current_season} E${item.current_episode} · sigue donde lo dejaste`
+      : 'Serie en progreso'
+  }
+  if (item.status === 'watching') return 'Lo dejaste a medias y puedes retomarlo ahora'
+  if (item.rating && item.rating >= 8) return 'Tiene buena nota en tu colección'
+  if (queuedIds.value.has(item.$id)) return 'Está en tu cola de pendientes'
+  return 'Una buena candidata para seguir hoy'
+}
+
+function recommendationScore(item: Media): number {
+  let score = 0
+
+  if (queuedIds.value.has(item.$id)) score += 70
+  if (item.status === 'watching') score += 60
+  if (item.status === 'pending') score += 35
+  if (item.type === 'series' && item.status === 'watching') score += 20
+  if (item.rating) score += Math.min(item.rating, 10) * 4
+
+  const recent = item.status === 'watching'
+    ? daysSince(item.$updatedAt)
+    : daysSince(item.finished_at)
+  if (Number.isFinite(recent)) score += Math.max(0, 20 - recent)
+
+  return score
+}
+
+const recommendedNow = computed<SuggestedNowItem[]>(() => {
+  return media.all
+    .filter(item => item.status !== 'dropped')
+    .filter(item => item.$id !== nextInQueue.value?.$id)
+    .filter(item => item.$id !== recentMedia.value?.$id)
+    .map(item => ({
+      ...item,
+      reason: recommendationReason(item),
+      subtitle: recommendationSubtitle(item),
+      score: recommendationScore(item),
+    }))
+    .filter(item => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3)
+})
 
 const formDrawer    = ref(false)
 const detailDrawer  = ref(false)
