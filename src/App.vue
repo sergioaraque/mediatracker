@@ -3,6 +3,7 @@
     <RouterView />
     <ToastContainer />
     <PwaInstallBanner />
+    <PwaUpdateBanner />
     <RatingDialog />
   </ErrorBoundary>
 </template>
@@ -13,6 +14,7 @@ import { useMediaStore }   from '@/stores/media'
 import ErrorBoundary       from '@/components/ErrorBoundary.vue'
 import ToastContainer      from '@/components/ui/ToastContainer.vue'
 import PwaInstallBanner    from '@/components/ui/PwaInstallBanner.vue'
+import PwaUpdateBanner     from '@/components/ui/PwaUpdateBanner.vue'
 import RatingDialog        from '@/components/ui/RatingDialog.vue'
 
 const media = useMediaStore()
