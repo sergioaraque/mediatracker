@@ -1,6 +1,7 @@
 import { defineStore }                                        from 'pinia'
 import { ref, computed }                                       from 'vue'
 import { databases, DB_ID, COLL_MEDIA, COLL_PROGRESS, COLL_STATUS_HISTORY, Query, ID, Permission, Role } from '@/lib/appwrite'
+import { hasAppwriteDatabaseConfig, getMissingAppwriteDatabaseConfigMessage } from '@/lib/appwrite'
 import type { Media, Progress, MediaFormData, StatusHistory }  from '@/types'
 import { useAuthStore }                                        from './auth'
 import { useUiStore }                                          from './ui'
@@ -92,6 +93,11 @@ export const useMediaStore = defineStore('media', () => {
   }
 
   async function fetch(pageSize: number = 500) {
+    if (!hasAppwriteDatabaseConfig) {
+      error.value = getMissingAppwriteDatabaseConfigMessage()
+      throw new Error(error.value)
+    }
+
     loading.value = true
     error.value = null
     try {
@@ -135,6 +141,8 @@ export const useMediaStore = defineStore('media', () => {
   }
 
   async function create(data: MediaFormData) {
+    if (!hasAppwriteDatabaseConfig) throw new Error(getMissingAppwriteDatabaseConfigMessage())
+
     const { total_seasons, total_episodes, progress_notes, ...rawData } = data
     const mediaData = stripMeta(rawData as Record<string, unknown>)
     try {
@@ -149,6 +157,8 @@ export const useMediaStore = defineStore('media', () => {
   }
 
   async function update(id: string, data: MediaFormData) {
+    if (!hasAppwriteDatabaseConfig) throw new Error(getMissingAppwriteDatabaseConfigMessage())
+
     const { total_seasons, total_episodes, progress_notes, ...rawData } = data
     const mediaData = stripMeta(rawData as Record<string, unknown>)
     try {
@@ -163,6 +173,8 @@ export const useMediaStore = defineStore('media', () => {
   }
 
   async function remove(id: string) {
+    if (!hasAppwriteDatabaseConfig) throw new Error(getMissingAppwriteDatabaseConfigMessage())
+
     await databases.deleteDocument(DB_ID, COLL_MEDIA, id)
     try {
       const r = await databases.listDocuments(DB_ID, COLL_PROGRESS, [Query.equal('media_id', id), Query.limit(1)])
@@ -172,6 +184,8 @@ export const useMediaStore = defineStore('media', () => {
   }
 
   async function cycleStatus(id: string) {
+    if (!hasAppwriteDatabaseConfig) throw new Error(getMissingAppwriteDatabaseConfigMessage())
+
     // Prevent race condition from multiple clicks
     if (_updating.value.has(id)) return
     _updating.value.add(id)
@@ -216,6 +230,8 @@ export const useMediaStore = defineStore('media', () => {
   }
 
   async function rewatch(id: string) {
+    if (!hasAppwriteDatabaseConfig) throw new Error(getMissingAppwriteDatabaseConfigMessage())
+
     // Prevent race condition from multiple clicks
     if (_updating.value.has(id)) return
     _updating.value.add(id)
@@ -239,6 +255,8 @@ export const useMediaStore = defineStore('media', () => {
   }
 
   async function setStatus(id: string, status: Media['status']) {
+    if (!hasAppwriteDatabaseConfig) throw new Error(getMissingAppwriteDatabaseConfigMessage())
+
     // Prevent race condition from multiple clicks
     if (_updating.value.has(id)) return
     _updating.value.add(id)

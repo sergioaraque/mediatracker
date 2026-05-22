@@ -8,12 +8,18 @@ const collProgress = import.meta.env.VITE_APPWRITE_COLL_PROGRESS as string || ''
 const collStatusHistory = import.meta.env.VITE_APPWRITE_COLL_STATUS_HISTORY as string || ''
 const bucketCovers = import.meta.env.VITE_APPWRITE_BUCKET_COVERS as string || ''
 
+export const hasAppwriteDatabaseConfig = Boolean(dbId && collMedia && collProgress && collStatusHistory && bucketCovers)
+
 if (!endpoint || !projectId) {
   console.error('[MediaTracker] Falta configuración. Añade VITE_APPWRITE_ENDPOINT y VITE_APPWRITE_PROJECT_ID en Coolify (o en .env.local para desarrollo).')
 }
 
 if (!dbId || !collMedia || !collProgress || !collStatusHistory || !bucketCovers) {
   console.error('[MediaTracker] Falta configuración de colecciones. Añade VITE_APPWRITE_DB_ID, VITE_APPWRITE_COLL_MEDIA, VITE_APPWRITE_COLL_PROGRESS, VITE_APPWRITE_COLL_STATUS_HISTORY y VITE_APPWRITE_BUCKET_COVERS.')
+}
+
+export function getMissingAppwriteDatabaseConfigMessage() {
+  return 'Falta configuración de Appwrite. Revisa VITE_APPWRITE_DB_ID, VITE_APPWRITE_COLL_MEDIA, VITE_APPWRITE_COLL_PROGRESS, VITE_APPWRITE_COLL_STATUS_HISTORY y VITE_APPWRITE_BUCKET_COVERS.'
 }
 
 export const client = new Client()
