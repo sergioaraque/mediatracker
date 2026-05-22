@@ -304,10 +304,9 @@ import { useUiStore }    from '@/stores/ui'
 import { storeToRefs }   from 'pinia'
 import { useKeyboard }   from '@/composables/useKeyboard'
 import { useAchievements } from '@/composables/useAchievements'
-import { useQueue }        from '@/composables/useQueue'
+import { useHomeInsights } from '@/composables/useHomeInsights'
 import { useOnlineStatus } from '@/composables/useOnlineStatus'
 import type { Media } from '@/types'
-import { getWatchActivitySummary } from '@/lib/watchHistory'
 import AppHeader          from '@/components/layout/AppHeader.vue'
 import AppSidebar         from '@/components/layout/AppSidebar.vue'
 import FilterBar          from '@/components/layout/FilterBar.vue'
@@ -335,6 +334,7 @@ const ui     = useUiStore()
 const { showCommandPalette, sidebarExpanded } = storeToRefs(ui)
 const { error: mediaError } = storeToRefs(media)
 const { isOnline } = useOnlineStatus()
+const { nextInQueue, recentMedia, activitySummary, recommendedNow } = useHomeInsights()
 
 // Adjust grid columns based on sidebar state so cards don't get squished
 const gridCols = computed(() =>
@@ -342,103 +342,6 @@ const gridCols = computed(() =>
     ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4'
     : 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4'
 )
-const q = useQueue()
-const { queueIds } = q
-
-const nextInQueue = computed(() => {
-  for (const id of queueIds.value) {
-    const item = media.all.find(m => m.$id === id && m.status === 'pending')
-    if (item) return item
-  }
-  return null
-})
-
-const recentMedia = computed(() => media.recent.getRecentMedia(media.all))
-
-const activitySummary = computed(() => {
-  const summary = getWatchActivitySummary(7)
-  const topTitles = summary.topMediaIds
-    .map(mediaId => {
-      const item = media.all.find(m => m.$id === mediaId)
-      if (!item) return null
-      return {
-        id: mediaId,
-        title: item.title,
-        count: summary.recentCounts[mediaId] ?? 0,
-      }
-    })
-    .filter((item): item is { id: string; title: string; count: number } => item !== null)
-
-  return { ...summary, topTitles }
-})
-
-const queuedIds = computed(() => new Set(queueIds.value))
-
-type SuggestedNowItem = Media & {
-  reason: string
-  subtitle: string
-  score: number
-}
-
-function daysSince(value: string | null): number {
-  if (!value) return Number.POSITIVE_INFINITY
-  const delta = Date.now() - new Date(value).getTime()
-  return Number.isNaN(delta) ? Number.POSITIVE_INFINITY : Math.max(0, delta / (1000 * 60 * 60 * 24))
-}
-
-function recommendationReason(item: Media): string {
-  if (queuedIds.value.has(item.$id)) return 'En cola'
-  if (item.status === 'watching') return 'En marcha'
-  if (item.rating && item.rating >= 8) return 'Top rated'
-  if (item.finished_at && daysSince(item.finished_at) <= 30) return 'Reciente'
-  return 'Pendiente'
-}
-
-function recommendationSubtitle(item: Media): string {
-  if (item.status === 'watching' && item.type === 'series') {
-    return item.current_season && item.current_episode
-      ? `T${item.current_season} E${item.current_episode} · sigue donde lo dejaste`
-      : 'Serie en progreso'
-  }
-  if (item.status === 'watching') return 'Lo dejaste a medias y puedes retomarlo ahora'
-  if (item.rating && item.rating >= 8) return 'Tiene buena nota en tu colección'
-  if (queuedIds.value.has(item.$id)) return 'Está en tu cola de pendientes'
-  return 'Una buena candidata para seguir hoy'
-}
-
-function recommendationScore(item: Media): number {
-  let score = 0
-
-  if (queuedIds.value.has(item.$id)) score += 70
-  if (item.status === 'watching') score += 60
-  if (item.status === 'pending') score += 35
-  if (item.type === 'series' && item.status === 'watching') score += 20
-  if (item.rating) score += Math.min(item.rating, 10) * 4
-
-  const recent = item.status === 'watching'
-    ? daysSince(item.$updatedAt)
-    : daysSince(item.finished_at)
-  if (Number.isFinite(recent)) score += Math.max(0, 20 - recent)
-
-  return score
-}
-
-const recommendedNow = computed<SuggestedNowItem[]>(() => {
-  return media.all
-    .filter(item => item.status !== 'dropped')
-    .filter(item => item.$id !== nextInQueue.value?.$id)
-    .filter(item => item.$id !== recentMedia.value?.$id)
-    .map(item => ({
-      ...item,
-      reason: recommendationReason(item),
-      subtitle: recommendationSubtitle(item),
-      score: recommendationScore(item),
-    }))
-    .filter(item => item.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 3)
-})
-
 const formDrawer    = ref(false)
 const detailDrawer  = ref(false)
 const statsDrawer   = ref(false)
