@@ -2,7 +2,7 @@
   <article
     class="group relative rounded-2xl overflow-hidden cursor-pointer select-none transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/60"
     style="aspect-ratio: 2/3"
-    :class="cardBorder"
+    :class="[cardBorder, isBusy ? 'opacity-85' : '']"
     @click="$emit('detail', media)"
   >
     <!-- Cover / fallback gradient -->
@@ -96,22 +96,24 @@
       <!-- Center: primary action -->
       <button
         @click.stop="cycleStatus"
+        :disabled="isBusy"
         class="primary-action group/p flex items-center gap-2 px-5 py-2.5 rounded-2xl border transition-all duration-150"
-        :class="primaryBtnClass"
+        :class="[primaryBtnClass, isBusy ? 'opacity-70 cursor-wait' : '']"
       >
-        <component :is="nextStatusIcon" class="w-4 h-4 shrink-0" />
-        <span class="text-sm font-bold">{{ nextStatusLabel }}</span>
+        <Loader2 v-if="isBusy" class="w-4 h-4 shrink-0 animate-spin" />
+        <component v-else :is="nextStatusIcon" class="w-4 h-4 shrink-0" />
+        <span class="text-sm font-bold">{{ isBusy ? 'Actualizando…' : nextStatusLabel }}</span>
       </button>
 
       <!-- Bottom: secondary actions (icon only) -->
       <div class="flex items-center gap-1.5">
-        <button @click.stop="$emit('edit', media)" class="sec-btn text-gray-400 hover:text-white hover:bg-white/15 border-white/10 hover:border-white/25" title="Editar">
+        <button @click.stop="$emit('edit', media)" :disabled="isBusy" class="sec-btn text-gray-400 hover:text-white hover:bg-white/15 border-white/10 hover:border-white/25 disabled:opacity-40 disabled:pointer-events-none" title="Editar">
           <Pencil class="w-3.5 h-3.5" />
         </button>
-        <button v-if="media.status === 'watching'" @click.stop="dropMedia" class="sec-btn text-red-400/70 hover:text-red-300 hover:bg-red-500/15 border-red-500/15 hover:border-red-500/35" title="Abandonar">
+        <button v-if="media.status === 'watching'" @click.stop="dropMedia" :disabled="isBusy" class="sec-btn text-red-400/70 hover:text-red-300 hover:bg-red-500/15 border-red-500/15 hover:border-red-500/35 disabled:opacity-40 disabled:pointer-events-none" title="Abandonar">
           <XCircle class="w-3.5 h-3.5" />
         </button>
-        <button @click.stop="$emit('delete', media.$id)" class="sec-btn text-red-400/70 hover:text-red-300 hover:bg-red-500/15 border-red-500/15 hover:border-red-500/35" title="Eliminar">
+        <button @click.stop="$emit('delete', media.$id)" :disabled="isBusy" class="sec-btn text-red-400/70 hover:text-red-300 hover:bg-red-500/15 border-red-500/15 hover:border-red-500/35 disabled:opacity-40 disabled:pointer-events-none" title="Eliminar">
           <Trash2 class="w-3.5 h-3.5" />
         </button>
       </div>
@@ -123,7 +125,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Star, Pencil, Trash2, Film, Tv, BookOpen, Eye, CheckCheck, RotateCcw, XCircle } from 'lucide-vue-next'
+import { Star, Pencil, Trash2, Film, Tv, BookOpen, Eye, CheckCheck, RotateCcw, XCircle, Loader2 } from 'lucide-vue-next'
 import { useMediaStore } from '@/stores/media'
 import type { Media } from '@/types'
 
@@ -131,6 +133,7 @@ const props = defineProps<{ media: Media }>()
 defineEmits<{ detail: [m: Media]; edit: [m: Media]; delete: [id: string] }>()
 
 const store = useMediaStore()
+const isBusy = computed(() => store.isUpdating(props.media.$id))
 
 const typeIcon  = computed(() => ({ movie: Film, series: Tv, book: BookOpen }[props.media.type]))
 const typeLabel = computed(() => ({ movie: 'Película', series: 'Serie', book: 'Libro' }[props.media.type]))

@@ -5,7 +5,7 @@ import type { Media, Progress, MediaFormData, StatusHistory }  from '@/types'
 import { useAuthStore }                                        from './auth'
 import { useUiStore }                                          from './ui'
 import { addWatchEntry }                                       from '@/lib/watchHistory'
-import { withTimeout }                                         from '@/lib/retry'
+import { withRetry, withTimeout }                              from '@/lib/retry'
 import { useRecentMedia }                                      from '@/composables/useRecentMedia'
 
 export type SortField = '$createdAt' | 'title' | 'year' | 'rating'
@@ -17,6 +17,7 @@ export const useMediaStore = defineStore('media', () => {
 
   const all       = ref<Media[]>([])
   const loading   = ref(false)
+  const error     = ref<string | null>(null)
   const syncing   = ref(false)  // Track if syncing with server
   const _updating = ref<Set<string>>(new Set())  // Track updating items to prevent race conditions
 
@@ -66,22 +67,58 @@ export const useMediaStore = defineStore('media', () => {
     return r
   })
 
+  function fetchErrorMessage(rawError: unknown) {
+    const e = rawError as { message?: string; code?: number; type?: string }
+    const msg  = (e?.message ?? '').toLowerCase()
+    const type = (e?.type ?? '').toLowerCase()
+
+    if (
+      e?.code === 0 ||
+      msg.includes('failed to fetch') ||
+      msg.includes('networkerror') ||
+      msg.includes('network error') ||
+      msg.includes('timeout') ||
+      msg.includes('err_failed') ||
+      type.includes('network')
+    ) {
+      return 'No se pudo conectar con el servidor. Revisa tu red e inténtalo de nuevo.'
+    }
+
+    if (msg.includes('invalid url') || msg.includes('missing required parameter')) {
+      return 'La configuración de Appwrite parece incompleta o inválida.'
+    }
+
+    return e?.message || 'No se pudo cargar tu colección'
+  }
+
   async function fetch(pageSize: number = 500) {
     loading.value = true
+    error.value = null
     try {
-      const res = await databases.listDocuments(DB_ID, COLL_MEDIA, [
-        Query.limit(pageSize),
-        Query.orderDesc('$createdAt'),
-      ])
+      const res = await withRetry(
+        () => databases.listDocuments(DB_ID, COLL_MEDIA, [
+          Query.limit(pageSize),
+          Query.orderDesc('$createdAt'),
+        ]),
+        { maxAttempts: 3, initialDelay: 250 }
+      )
       all.value = res.documents as unknown as Media[]
       
       // Log if more items exist (pagination hint)
       if (res.total > pageSize) {
         console.warn(`[MediaTracker] ${res.total} items exist but only ${pageSize} loaded. Implement pagination if needed.`)
       }
+    } catch (e) {
+      error.value = fetchErrorMessage(e)
+      console.error('[MediaTracker] Failed to fetch media:', e)
+      throw e
     } finally {
       loading.value = false
     }
+  }
+
+  function isUpdating(id: string) {
+    return _updating.value.has(id)
   }
 
   function perms() {
@@ -312,9 +349,9 @@ export const useMediaStore = defineStore('media', () => {
   }
 
   return {
-    all, loading, syncing, filtered,
+    all, loading, error, syncing, filtered,
     filterType, filterStatus, filterMinRating, filterPlatform, search, sortField, sortOrder,
-    fetch, create, update, remove, cycleStatus, setStatus, rewatch, getProgress, getStatusHistory, checkReminders,
+    fetch, create, update, remove, cycleStatus, setStatus, rewatch, isUpdating, getProgress, getStatusHistory, checkReminders,
     recent,
   }
 })
