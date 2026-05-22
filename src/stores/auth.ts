@@ -9,6 +9,35 @@ export const useAuthStore = defineStore('auth', () => {
   const initialized = ref(false)
   let initPromise: Promise<void> | null = null
 
+  function isTransientAuthError(rawError: unknown) {
+    const error = rawError as { message?: string; code?: number; type?: string }
+    const msg = (error?.message ?? '').toLowerCase()
+    const type = (error?.type ?? '').toLowerCase()
+
+    return (
+      error?.code === 0 ||
+      msg.includes('failed to fetch') ||
+      msg.includes('networkerror') ||
+      msg.includes('network error') ||
+      msg.includes('err_failed') ||
+      msg.includes('cors') ||
+      type.includes('network')
+    )
+  }
+
+  async function resolveCurrentUser(retries = 2) {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        return await account.get()
+      } catch (error) {
+        if (attempt === retries || !isTransientAuthError(error)) throw error
+        await new Promise(resolve => setTimeout(resolve, 300 * (attempt + 1)))
+      }
+    }
+
+    return null
+  }
+
   async function init() {
     if (initialized.value) return
     if (initPromise) return initPromise
@@ -33,22 +62,22 @@ export const useAuthStore = defineStore('auth', () => {
   async function login(email: string, password: string, retries = 2) {
     loading.value = true
     try {
-      try {
-        await account.createEmailPasswordSession(email, password)
-      } catch (e: unknown) {
-        // Reintentar una vez para fallos de red transitorios
-        if (retries > 0) {
-          const error = e as { message?: string }
-          const msg = (error?.message ?? '').toLowerCase()
-          if (msg.includes('failed to fetch') || msg.includes('networkerror') || msg.includes('err_failed')) {
-            console.warn(`[Auth] Reintentando login después de fallo de red...`)
-            await new Promise(r => setTimeout(r, 500))
-            return login(email, password, retries - 1)
-          }
+      let sessionCreated = false
+      for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+          await account.createEmailPasswordSession(email, password)
+          sessionCreated = true
+          break
+        } catch (error) {
+          if (attempt === retries || !isTransientAuthError(error)) throw error
+          console.warn('[Auth] Reintentando login después de fallo transitorio...')
+          await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)))
         }
-        throw e
       }
-      user.value = await account.get()
+
+      if (sessionCreated) {
+        user.value = await resolveCurrentUser()
+      }
       initialized.value = true
     } finally {
       loading.value = false
@@ -59,24 +88,21 @@ export const useAuthStore = defineStore('auth', () => {
     loading.value = true
     try {
       const name = email.split('@')[0]
+
       await account.create('unique()', email, password, name)
-      
-      try {
-        await account.createEmailPasswordSession(email, password)
-      } catch (e: unknown) {
-        // Reintentar una vez para fallos de red transitorios
-        if (retries > 0) {
-          const error = e as { message?: string }
-          const msg = (error?.message ?? '').toLowerCase()
-          if (msg.includes('failed to fetch') || msg.includes('networkerror') || msg.includes('err_failed')) {
-            console.warn(`[Auth] Reintentando sesión después de crear cuenta...`)
-            await new Promise(r => setTimeout(r, 500))
-            return register(email, password, retries - 1)
-          }
+
+      for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+          await account.createEmailPasswordSession(email, password)
+          break
+        } catch (error) {
+          if (attempt === retries || !isTransientAuthError(error)) throw error
+          console.warn('[Auth] Reintentando sesión tras registrar cuenta...')
+          await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)))
         }
-        throw e
       }
-      user.value = await account.get()
+
+      user.value = await resolveCurrentUser()
       initialized.value = true
     } finally {
       loading.value = false
