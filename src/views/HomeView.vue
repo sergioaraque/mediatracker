@@ -306,6 +306,7 @@ import { useKeyboard }   from '@/composables/useKeyboard'
 import { useAchievements } from '@/composables/useAchievements'
 import { useHomeInsights } from '@/composables/useHomeInsights'
 import { useOnlineStatus } from '@/composables/useOnlineStatus'
+import { useQueue }      from '@/composables/useQueue'
 import type { Media } from '@/types'
 import AppHeader          from '@/components/layout/AppHeader.vue'
 import AppSidebar         from '@/components/layout/AppSidebar.vue'
@@ -331,6 +332,7 @@ import DynamicBackground  from '@/components/layout/DynamicBackground.vue'
 const router = useRouter()
 const media  = useMediaStore()
 const ui     = useUiStore()
+const q      = useQueue()
 const { showCommandPalette, sidebarExpanded } = storeToRefs(ui)
 const { error: mediaError } = storeToRefs(media)
 const { isOnline } = useOnlineStatus()
