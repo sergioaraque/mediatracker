@@ -18,7 +18,7 @@
     <!-- Info -->
     <div class="flex-1 min-w-0">
       <div class="flex items-center gap-2 mb-0.5">
-        <p class="text-sm font-semibold text-white truncate">{{ media.title }}</p>
+        <p class="text-sm font-semibold text-white truncate" v-html="highlightedTitle"></p>
         <span
           v-if="media.type === 'series' && media.current_season"
           class="shrink-0 text-[10px] font-bold text-violet-300 bg-violet-500/10 border border-violet-500/20 rounded-full px-1.5 py-0.5"
@@ -32,7 +32,7 @@
           {{ statusLabel }}
         </span>
         <span v-if="media.year">· {{ media.year }}</span>
-        <span v-if="media.genre" class="truncate">· {{ media.genre.split(',')[0].trim() }}</span>
+        <span v-if="media.genre" class="truncate">· <span v-html="highlightedGenre"></span></span>
       </div>
     </div>
 
@@ -69,6 +69,7 @@ import type { Media } from '@/types'
 const props = defineProps<{ media: Media }>()
 defineEmits<{ detail: [m: Media]; edit: [m: Media]; delete: [id: string] }>()
 
+import { highlight, highlightWithRanges } from '@/composables/useHighlight'
 const store = useMediaStore()
 
 const typeIcon = computed(() => ({ movie: Film, series: Tv, book: BookOpen }[props.media.type]))
@@ -106,6 +107,18 @@ async function cycleStatus() {
 async function dropMedia() {
   await store.setStatus(props.media.$id, 'dropped')
 }
+
+const highlightedTitle = computed(() => {
+  const matches = store.searchMatches?.[props.media.$id]?.title
+  if (matches && matches.length) return highlightWithRanges(props.media.title, matches)
+  return highlight(props.media.title, store.search)
+})
+const highlightedGenre = computed(() => {
+  const g = (props.media.genre || '').split(',')[0]?.trim()
+  const matches = store.searchMatches?.[props.media.$id]?.genre
+  if (matches && matches.length) return highlightWithRanges(g, matches)
+  return highlight(g, store.search)
+})
 </script>
 
 <style scoped>

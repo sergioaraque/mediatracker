@@ -63,6 +63,33 @@
             @input="onSearchInput"
             @keydown.esc.prevent="clearSearch"
           />
+          <!-- Suggestions -->
+          <div v-if="showSuggestions && genreSuggestions.length" class="absolute left-0 mt-1 w-full bg-gray-900 border border-white/6 rounded-lg shadow-2xl z-40">
+            <ul class="max-h-44 overflow-auto">
+              <li v-for="g in genreSuggestions" :key="g" class="px-3 py-2 hover:bg-white/5 cursor-pointer text-sm" @click="chooseGenreSuggestion(g)">{{ g }}</li>
+            </ul>
+          </div>
+
+          <!-- Presets button + dropdown -->
+          <div class="absolute right-8 top-1/2 -translate-y-1/2 flex items-center gap-2">
+            <button @click.prevent="savePreset" title="Guardar búsqueda" class="p-1.5 rounded-md text-gray-400 hover:text-white hover:bg-white/8">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            </button>
+            <div class="relative">
+              <button @click.prevent="showPresets = !showPresets" class="p-1.5 rounded-md text-gray-400 hover:text-white hover:bg-white/8">
+                <ChevronDown class="w-4 h-4" />
+              </button>
+              <div v-if="showPresets" class="absolute right-0 mt-1 w-60 bg-gray-900 border border-white/6 rounded-lg shadow-2xl z-50">
+                <div v-if="presets.length" class="p-2">
+                  <div v-for="p in presets" :key="p.id" class="flex items-center justify-between gap-2 p-2 hover:bg-white/5 rounded">
+                    <button @click.prevent="applyPreset(p)" class="text-sm text-left truncate flex-1">{{ p.name }} <span class="text-xs text-gray-400">· {{ p.query }}</span></button>
+                    <button @click.prevent="remove(p.id)" class="text-xs text-red-400 ml-2">Eliminar</button>
+                  </div>
+                </div>
+                <div v-else class="p-3 text-sm text-gray-400">No hay presets guardados</div>
+              </div>
+            </div>
+          </div>
           <button
             v-if="localSearch"
             type="button"
@@ -248,6 +275,7 @@ import { ref, computed, watch, onUnmounted } from 'vue'
 import { Search, ChevronDown, Star, LayoutGrid, List, X } from 'lucide-vue-next'
 import { useMediaStore } from '@/stores/media'
 import { useUiStore }    from '@/stores/ui'
+import { useSearchPresets } from '@/composables/useSearchPresets'
 import type { SortField, SortOrder } from '@/stores/media'
 import StatusPill from './StatusPill.vue'
 
@@ -372,11 +400,15 @@ function clearAdvancedFilters() {
 const localSearch = ref(media.search)
 const searchInput = ref<HTMLInputElement>()
 let debounceTimer = 0
+const showSuggestions = ref(false)
+const showPresets = ref(false)
+const { presets, add, remove } = useSearchPresets()
 
 function onSearchInput(e: Event) {
   localSearch.value = (e.target as HTMLInputElement).value
   clearTimeout(debounceTimer)
   debounceTimer = window.setTimeout(() => { media.search = localSearch.value }, 140)
+  showSuggestions.value = true
 }
 
 watch(() => media.search, v => { if (v !== localSearch.value) localSearch.value = v })
@@ -388,6 +420,45 @@ function onSortChange(e: Event) {
 }
 
 onUnmounted(() => clearTimeout(debounceTimer))
+
+const uniqueGenres = computed(() => {
+  const s = new Set<string>()
+  for (const m of media.all) {
+    if (!m.genre) continue
+    for (const g of m.genre.split(',')) s.add(g.trim())
+  }
+  return Array.from(s).sort()
+})
+
+const genreSuggestions = computed(() => {
+  const q = localSearch.value.trim().toLowerCase()
+  if (!q) return []
+  return uniqueGenres.value.filter(g => g.toLowerCase().includes(q)).slice(0, 8)
+})
+
+function chooseGenreSuggestion(g: string) {
+  localSearch.value = g
+  media.search = g
+  showSuggestions.value = false
+  searchInput.value?.focus()
+}
+
+function savePreset() {
+  const name = prompt('Nombre para la búsqueda (presets guardados)')
+  if (!name) return
+  add({ name, query: localSearch.value, filters: { type: media.filterType, status: media.filterStatus, minRating: media.filterMinRating, platform: media.filterPlatform } })
+  showPresets.value = true
+}
+
+function applyPreset(p: any) {
+  media.search = p.query
+  localSearch.value = p.query
+  media.filterType = p.filters?.type ?? null
+  media.filterStatus = p.filters?.status ?? null
+  media.filterMinRating = p.filters?.minRating ?? null
+  media.filterPlatform = p.filters?.platform ?? null
+  showPresets.value = false
+}
 
 defineExpose({ focusSearch: () => searchInput.value?.focus() })
 </script>

@@ -75,7 +75,7 @@
 
     <!-- Bottom info (always visible) -->
     <div class="absolute inset-x-0 bottom-0 px-3 pb-3 pt-8 pointer-events-none">
-      <p class="text-white text-sm font-semibold leading-tight line-clamp-2 mb-1.5">{{ media.title }}</p>
+      <p class="text-white text-sm font-semibold leading-tight line-clamp-2 mb-1.5" v-html="highlightedTitle"></p>
       <div class="flex items-center gap-2">
         <span class="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider" :class="statusTextClass">
           <span class="w-1.5 h-1.5 rounded-full shrink-0" :class="statusDotClass" />
@@ -132,6 +132,7 @@ import type { Media } from '@/types'
 const props = defineProps<{ media: Media }>()
 defineEmits<{ detail: [m: Media]; edit: [m: Media]; delete: [id: string] }>()
 
+import { highlight, highlightWithRanges } from '@/composables/useHighlight'
 const store = useMediaStore()
 const isBusy = computed(() => store.isUpdating(props.media.$id))
 
@@ -196,6 +197,12 @@ async function cycleStatus() {
 async function dropMedia() {
   await store.setStatus(props.media.$id, 'dropped')
 }
+
+const highlightedTitle = computed(() => {
+  const matches = store.searchMatches?.[props.media.$id]?.title
+  if (matches && matches.length) return highlightWithRanges(props.media.title, matches)
+  return highlight(props.media.title, store.search)
+})
 </script>
 
 <style scoped>
@@ -263,4 +270,7 @@ async function dropMedia() {
   border-width: 0 20px 20px 0;
   border-color: transparent rgba(217,119,6,.25) transparent transparent;
 }
+</style>
+<style scoped>
+.search-mark { background: rgba(253,230,138,0.9); color: #111827; padding: 0 .15rem; border-radius: .15rem; }
 </style>

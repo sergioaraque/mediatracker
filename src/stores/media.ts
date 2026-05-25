@@ -1,5 +1,6 @@
 import { defineStore }                                        from 'pinia'
 import { ref, computed }                                       from 'vue'
+import Fuse from 'fuse.js'
 import { databases, DB_ID, COLL_MEDIA, COLL_PROGRESS, COLL_STATUS_HISTORY, Query, ID, Permission, Role } from '@/lib/appwrite'
 import { hasAppwriteDatabaseConfig, getMissingAppwriteDatabaseConfigMessage } from '@/lib/appwrite'
 import type { Media, Progress, MediaFormData, StatusHistory }  from '@/types'
@@ -49,20 +50,59 @@ export const useMediaStore = defineStore('media', () => {
     return r
   })
 
+  // Map of document id -> { key: [[start,end], ...] }
+  const searchMatches = ref<Record<string, Record<string, number[][]>>>({})
+
   const filtered = computed(() => {
     let r = sorted.value
 
+
+    // Apply basic filters first
     if (filterType.value)      r = r.filter(m => m.type     === filterType.value)
     if (filterStatus.value)    r = r.filter(m => m.status   === filterStatus.value)
     if (filterMinRating.value) r = r.filter(m => (m.rating ?? 0) >= filterMinRating.value!)
     if (filterPlatform.value)  r = r.filter(m => m.platform === filterPlatform.value)
 
+    // Fuzzy search: use Fuse.js for better matching across title, genre and year
     if (search.value) {
-      const q = search.value.toLowerCase()
-      r = r.filter(m =>
-        m.title?.toLowerCase().includes(q) ||
-        m.genre?.toLowerCase().includes(q)
-      )
+      try {
+        const options: any = {
+          keys: [
+            { name: 'title', weight: 0.7 },
+            { name: 'genre',  weight: 0.2 },
+            { name: 'year',   weight: 0.1 }
+          ],
+          threshold: 0.35,
+          ignoreLocation: true,
+          includeScore: true,
+          includeMatches: true,
+        }
+        const fuse = new Fuse(r as unknown as object[], options)
+        const results = fuse.search(search.value)
+
+        // Save match indices per id for UI highlighting
+        const matchesPerId: Record<string, Record<string, number[][]>> = {}
+        r = results.map((res: any) => {
+          const id = (res.item as Media).$id
+          matchesPerId[id] = {}
+          if (Array.isArray(res.matches)) {
+            for (const m of res.matches) {
+              const key = String(m.key)
+              matchesPerId[id][key] = (m.indices || []).map((pair: number[]) => [pair[0], pair[1]])
+            }
+          }
+          return res.item as Media
+        })
+
+        searchMatches.value = matchesPerId
+      } catch (e) {
+        // Fallback to basic substring match on error
+        const q = search.value.toLowerCase()
+        r = r.filter(m => (m.title?.toLowerCase() ?? '').includes(q) || (m.genre?.toLowerCase() ?? '').includes(q))
+        searchMatches.value = {}
+      }
+    } else {
+      searchMatches.value = {}
     }
 
     return r
@@ -367,9 +407,29 @@ export const useMediaStore = defineStore('media', () => {
   }
 
   return {
-    all, loading, error, syncing, filtered,
-    filterType, filterStatus, filterMinRating, filterPlatform, search, sortField, sortOrder,
-    fetch, create, update, remove, cycleStatus, setStatus, rewatch, isUpdating, getProgress, getStatusHistory, checkReminders,
-    recent,
+    all,
+    loading,
+    error,
+    syncing,
+    fetch,
+    create,
+    update,
+    remove,
+    cycleStatus,
+    rewatch,
+    setStatus,
+    isUpdating,
+    getProgress,
+    upsertProgress,
+    filterType,
+    filterStatus,
+    filterMinRating,
+    filterPlatform,
+    search,
+    sortField,
+    sortOrder,
+    sorted,
+    filtered,
+    searchMatches,
   }
 })
