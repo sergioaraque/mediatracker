@@ -13,6 +13,7 @@ export const useUiStore = defineStore('ui', () => {
   const viewMode             = ref<'grid' | 'list'>('grid')
   const pendingRatingMedia   = ref<Media | null>(null)
   const showCommandPalette   = ref(false)
+  const showSearchPresets    = ref(false)
   const sidebarExpanded      = ref(localStorage.getItem('mt_sidebar') !== 'false')
 
   function toast(message: string, type: Toast['type'] = 'success') {
@@ -27,5 +28,7 @@ export const useUiStore = defineStore('ui', () => {
 
   watch(sidebarExpanded, v => localStorage.setItem('mt_sidebar', String(v)))
 
-  return { toasts, toast, dismiss, viewMode, pendingRatingMedia, showCommandPalette, sidebarExpanded }
+  function setShowSearchPresets(v: boolean) { showSearchPresets.value = v }
+
+  return { toasts, toast, dismiss, viewMode, pendingRatingMedia, showCommandPalette, showSearchPresets, setShowSearchPresets, sidebarExpanded }
 })

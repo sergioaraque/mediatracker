@@ -167,6 +167,18 @@
         />
       </TransitionGroup>
 
+      <!-- Load more -->
+      <div class="mt-6 flex justify-center" v-if="media.hasMore">
+        <button
+          @click="media.loadMore()"
+          :disabled="media.loading"
+          class="btn-primary px-5 py-2 flex items-center gap-2"
+        >
+          <svg v-if="media.loading" class="w-4 h-4 animate-spin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,.2)" stroke-width="4" fill="none"></circle></svg>
+          Cargar más
+        </button>
+      </div>
+
       <!-- List view -->
       <TransitionGroup name="cards" tag="div" class="flex flex-col gap-1.5" v-else>
         <MediaRow
@@ -379,6 +391,7 @@ useKeyboard({
   onNew:     () => { formDrawer.value = true },
   onSearch:  () => { filterBarRef.value?.focusSearch() },
   onPalette: () => { showCommandPalette.value = true },
+  onPresets: () => { ui.setShowSearchPresets(true) },
 })
 
 function openDetail(m: Media) {

@@ -4,6 +4,7 @@ export function useKeyboard(opts: {
   onNew?:     () => void
   onSearch?:  () => void
   onPalette?: () => void
+  onPresets?: () => void
 }) {
   function isTyping(): boolean {
     const tag = (document.activeElement as HTMLElement)?.tagName
@@ -14,6 +15,10 @@ export function useKeyboard(opts: {
     if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
       e.preventDefault()
       opts.onPalette?.() ?? opts.onSearch?.()
+    }
+    if ((e.ctrlKey || e.metaKey) && (e.shiftKey) && (e.key.toLowerCase() === 'p')) {
+      e.preventDefault()
+      opts.onPresets?.()
     }
     if (e.key === 'n' && !e.ctrlKey && !e.metaKey && !e.altKey && !isTyping()) {
       opts.onNew?.()

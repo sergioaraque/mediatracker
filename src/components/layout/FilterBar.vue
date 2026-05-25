@@ -64,9 +64,18 @@
             @keydown.esc.prevent="clearSearch"
           />
           <!-- Suggestions -->
-          <div v-if="showSuggestions && genreSuggestions.length" class="absolute left-0 mt-1 w-full bg-gray-900 border border-white/6 rounded-lg shadow-2xl z-40">
-            <ul class="max-h-44 overflow-auto">
+          <div v-if="showSuggestions && (genreSuggestions.length || tmdbSuggestions.length)" class="absolute left-0 mt-1 w-full bg-gray-900 border border-white/6 rounded-lg shadow-2xl z-40">
+            <ul v-if="genreSuggestions.length" class="max-h-44 overflow-auto">
               <li v-for="g in genreSuggestions" :key="g" class="px-3 py-2 hover:bg-white/5 cursor-pointer text-sm" @click="chooseGenreSuggestion(g)">{{ g }}</li>
+            </ul>
+            <ul v-if="tmdbSuggestions.length" class="max-h-44 overflow-auto border-t border-white/6">
+              <li v-for="i in tmdbSuggestions" :key="i.id" class="px-3 py-2 hover:bg-white/5 cursor-pointer text-sm flex items-center gap-2" @click="applyTmdbSuggestion(i)">
+                <img v-if="i.poster_path || i.profile_path" :src="tmdbPoster(i.poster_path || i.profile_path, 'w92')" class="w-8 h-12 rounded object-cover" />
+                <div class="truncate">
+                  <div class="font-semibold truncate">{{ tmdbDisplayTitle(i) }}</div>
+                  <div class="text-xs text-gray-400 truncate">{{ (i.media_type || (i.title ? 'movie' : 'tv')) }}</div>
+                </div>
+              </li>
             </ul>
           </div>
 
@@ -76,14 +85,29 @@
               <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
             </button>
             <div class="relative">
-              <button @click.prevent="showPresets = !showPresets" class="p-1.5 rounded-md text-gray-400 hover:text-white hover:bg-white/8">
+              <button @click.prevent="(showPresets = !showPresets, ui.setShowSearchPresets(showPresets))" class="p-1.5 rounded-md text-gray-400 hover:text-white hover:bg-white/8">
                 <ChevronDown class="w-4 h-4" />
               </button>
               <div v-if="showPresets" class="absolute right-0 mt-1 w-60 bg-gray-900 border border-white/6 rounded-lg shadow-2xl z-50">
                 <div v-if="presets.length" class="p-2">
                   <div v-for="p in presets" :key="p.id" class="flex items-center justify-between gap-2 p-2 hover:bg-white/5 rounded">
-                    <button @click.prevent="applyPreset(p)" class="text-sm text-left truncate flex-1">{{ p.name }} <span class="text-xs text-gray-400">· {{ p.query }}</span></button>
-                    <button @click.prevent="remove(p.id)" class="text-xs text-red-400 ml-2">Eliminar</button>
+                    <div class="flex-1 min-w-0">
+                      <button @click.prevent="applyPreset(p)" class="text-sm text-left truncate w-full">
+                        <div class="flex items-center gap-2">
+                          <span class="font-semibold truncate">{{ p.name }}</span>
+                          <span class="text-xs text-gray-400 truncate">· {{ p.query }}</span>
+                        </div>
+                      </button>
+                      <div class="mt-1 flex gap-1 text-xs">
+                        <span v-if="p.filters?.type" class="px-2 py-0.5 rounded-full bg-white/6 text-gray-300">{{ p.filters.type }}</span>
+                        <span v-if="p.filters?.status" class="px-2 py-0.5 rounded-full bg-white/6 text-gray-300">{{ p.filters.status }}</span>
+                        <span v-if="p.filters?.minRating" class="px-2 py-0.5 rounded-full bg-white/6 text-gray-300">★ {{ p.filters.minRating }}+</span>
+                        <span v-if="p.filters?.platform" class="px-2 py-0.5 rounded-full bg-white/6 text-gray-300">{{ p.filters.platform }}</span>
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <button @click.prevent="removePreset(p.id)" class="text-xs text-red-400 ml-2">Eliminar</button>
+                    </div>
                   </div>
                 </div>
                 <div v-else class="p-3 text-sm text-gray-400">No hay presets guardados</div>
@@ -276,6 +300,9 @@ import { Search, ChevronDown, Star, LayoutGrid, List, X } from 'lucide-vue-next'
 import { useMediaStore } from '@/stores/media'
 import { useUiStore }    from '@/stores/ui'
 import { useSearchPresets } from '@/composables/useSearchPresets'
+import { useUiStore } from '@/stores/ui'
+import { fetchSearch, tmdbDisplayTitle, tmdbPoster } from '@/lib/tmdb'
+import { useUiStore } from '@/stores/ui'
 import type { SortField, SortOrder } from '@/stores/media'
 import StatusPill from './StatusPill.vue'
 
@@ -402,7 +429,12 @@ const searchInput = ref<HTMLInputElement>()
 let debounceTimer = 0
 const showSuggestions = ref(false)
 const showPresets = ref(false)
+const ui = useUiStore()
 const { presets, add, remove } = useSearchPresets()
+const tmdbSuggestions = ref<any[]>([])
+const tmdbCache = new Map<string, any[]>()
+let tmdbTimer = 0
+const uiStore = useUiStore()
 
 function onSearchInput(e: Event) {
   localSearch.value = (e.target as HTMLInputElement).value
@@ -420,6 +452,14 @@ function onSortChange(e: Event) {
 }
 
 onUnmounted(() => clearTimeout(debounceTimer))
+
+watch(() => ui.showSearchPresets, v => {
+  showPresets.value = !!v
+  if (v) {
+    // focus search input when opened via keyboard
+    setTimeout(() => searchInput.value?.focus(), 50)
+  }
+})
 
 const uniqueGenres = computed(() => {
   const s = new Set<string>()
@@ -443,11 +483,58 @@ function chooseGenreSuggestion(g: string) {
   searchInput.value?.focus()
 }
 
+async function fetchTmdbSuggestions(q: string) {
+  if (!q || q.trim().length < 3) { tmdbSuggestions.value = []; return }
+  const key = q.trim().toLowerCase()
+  if (tmdbCache.has(key)) { tmdbSuggestions.value = tmdbCache.get(key) || []; return }
+  try {
+    const res = await fetchSearch(q)
+    tmdbCache.set(key, res)
+    tmdbSuggestions.value = res
+  } catch (e) {
+    tmdbSuggestions.value = []
+  }
+}
+
+function onSearchInput(e: Event) {
+  localSearch.value = (e.target as HTMLInputElement).value
+  clearTimeout(debounceTimer)
+  debounceTimer = window.setTimeout(() => { media.search = localSearch.value }, 140)
+  showSuggestions.value = true
+  clearTimeout(tmdbTimer)
+  tmdbTimer = window.setTimeout(() => void fetchTmdbSuggestions(localSearch.value), 300)
+}
+
 function savePreset() {
   const name = prompt('Nombre para la búsqueda (presets guardados)')
   if (!name) return
   add({ name, query: localSearch.value, filters: { type: media.filterType, status: media.filterStatus, minRating: media.filterMinRating, platform: media.filterPlatform } })
   showPresets.value = true
+}
+
+function applyPreset(p: any) {
+  media.search = p.query
+  localSearch.value = p.query
+  media.filterType = p.filters?.type ?? null
+  media.filterStatus = p.filters?.status ?? null
+  media.filterMinRating = p.filters?.minRating ?? null
+  media.filterPlatform = p.filters?.platform ?? null
+  showPresets.value = false
+  uiStore.toast(`Preset "${p.name}" aplicado`)
+}
+
+function removePreset(id: string) {
+  if (!confirm('Eliminar preset? Esta acción no se puede deshacer.')) return
+  remove(id)
+  uiStore.toast('Preset eliminado', 'info')
+}
+
+function applyTmdbSuggestion(item: any) {
+  const title = tmdbDisplayTitle(item)
+  localSearch.value = title
+  media.search = title
+  showSuggestions.value = false
+  uiStore.toast(`Sugerencia TMDB aplicada: ${title}`)
 }
 
 function applyPreset(p: any) {

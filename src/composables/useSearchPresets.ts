@@ -2,11 +2,12 @@ import { ref } from 'vue'
 
 const KEY = 'mt_search_presets'
 
-type Preset = { id: string; name: string; query: string; filters?: { type?: string | null; status?: string | null; minRating?: number | null; platform?: string | null } }
+type Preset = { id: string; name: string; query: string; createdAt: number; filters?: { type?: string | null; status?: string | null; minRating?: number | null; platform?: string | null } }
 
 function load(): Preset[] {
   try {
-    return JSON.parse(localStorage.getItem(KEY) ?? '[]') as Preset[]
+    const list = JSON.parse(localStorage.getItem(KEY) ?? '[]') as Preset[]
+    return list.sort((a, b) => b.createdAt - a.createdAt)
   } catch { return [] }
 }
 
@@ -21,8 +22,8 @@ export function useSearchPresets() {
 
   function add(p: Omit<Preset, 'id'>) {
     const id = (Date.now() + Math.random()).toString(36)
-    const preset: Preset = { id, ...p }
-    presets.value = [preset, ...presets.value]
+    const preset: Preset = { id, createdAt: Date.now(), ...p }
+    presets.value = [preset, ...presets.value].sort((a,b) => b.createdAt - a.createdAt)
     saveList(presets.value)
     return preset
   }

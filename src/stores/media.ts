@@ -30,6 +30,10 @@ export const useMediaStore = defineStore('media', () => {
   const search          = ref('')
   const sortField       = ref<SortField>('$createdAt')
   const sortOrder       = ref<SortOrder>('DESC')
+  const totalCount = ref<number | null>(null)
+  const currentPage = ref(1)
+  const pageSize = ref(50)
+  const lastCursorCreatedAt = ref<string | null>(null)
 
   const sorted = computed(() => {
     const r = [...all.value]
@@ -52,6 +56,29 @@ export const useMediaStore = defineStore('media', () => {
 
   // Map of document id -> { key: [[start,end], ...] }
   const searchMatches = ref<Record<string, Record<string, number[][]>>>({})
+  // Fuse.js index cache to avoid rebuilding on every search
+  const _fuseIndex = ref<any | null>(null)
+  let _fuseSourceSig = ''
+  const fuseOptions: any = {
+    keys: [
+      { name: 'title', weight: 0.7 },
+      { name: 'genre',  weight: 0.2 },
+      { name: 'year',   weight: 0.1 }
+    ],
+    threshold: 0.35,
+    ignoreLocation: true,
+    includeScore: true,
+    includeMatches: true,
+  }
+
+  function ensureFuseIndex(list: Media[]) {
+    const sig = list.map(i => i.$id).join('|')
+    if (!_fuseIndex.value || sig !== _fuseSourceSig) {
+      _fuseSourceSig = sig
+      _fuseIndex.value = new Fuse(list as unknown as object[], fuseOptions)
+    }
+    return _fuseIndex.value
+  }
 
   const filtered = computed(() => {
     let r = sorted.value
@@ -66,18 +93,7 @@ export const useMediaStore = defineStore('media', () => {
     // Fuzzy search: use Fuse.js for better matching across title, genre and year
     if (search.value) {
       try {
-        const options: any = {
-          keys: [
-            { name: 'title', weight: 0.7 },
-            { name: 'genre',  weight: 0.2 },
-            { name: 'year',   weight: 0.1 }
-          ],
-          threshold: 0.35,
-          ignoreLocation: true,
-          includeScore: true,
-          includeMatches: true,
-        }
-        const fuse = new Fuse(r as unknown as object[], options)
+        const fuse = ensureFuseIndex(r)
         const results = fuse.search(search.value)
 
         // Save match indices per id for UI highlighting
@@ -132,27 +148,38 @@ export const useMediaStore = defineStore('media', () => {
     return e?.message || 'No se pudo cargar tu colección'
   }
 
-  async function fetch(pageSize: number = 500) {
+  async function fetch(pageSizeArg?: number) {
+    const limit = typeof pageSizeArg === 'number' ? pageSizeArg : pageSize.value
     if (!hasAppwriteDatabaseConfig) {
       error.value = getMissingAppwriteDatabaseConfigMessage()
       throw new Error(error.value)
     }
-
     loading.value = true
     error.value = null
     try {
-      const res = await withRetry(
-        () => databases.listDocuments(DB_ID, COLL_MEDIA, [
-          Query.limit(pageSize),
-          Query.orderDesc('$createdAt'),
-        ]),
-        { maxAttempts: 3, initialDelay: 250 }
-      )
-      all.value = res.documents as unknown as Media[]
-      
-      // Log if more items exist (pagination hint)
-      if (res.total > pageSize) {
-        console.warn(`[MediaTracker] ${res.total} items exist but only ${pageSize} loaded. Implement pagination if needed.`)
+      const queries: any[] = [Query.limit(limit), Query.orderDesc('$createdAt')]
+      if (lastCursorCreatedAt.value) {
+        queries.push(Query.lessThan('$createdAt', lastCursorCreatedAt.value))
+      } else if ((Query as any).offset) {
+        queries.push((Query as any).offset((currentPage.value - 1) * limit))
+      }
+
+      const res = await withRetry(() => databases.listDocuments(DB_ID, COLL_MEDIA, queries), { maxAttempts: 3, initialDelay: 250 })
+      const docs = res.documents as unknown as Media[]
+      if (currentPage.value === 1) all.value = docs
+      else {
+        const existing = new Set(all.value.map(d => d.$id))
+        for (const d of docs) if (!existing.has(d.$id)) all.value.push(d)
+      }
+      totalCount.value = typeof res.total === 'number' ? res.total : null
+
+      // Update cursor for next page when using cursor pagination
+      if (docs.length > 0) {
+        lastCursorCreatedAt.value = docs[docs.length - 1].$createdAt
+      }
+
+      if (totalCount.value && totalCount.value > limit) {
+        console.warn(`[MediaTracker] ${totalCount.value} items exist but only ${limit} loaded. Pagination active.`)
       }
     } catch (e) {
       error.value = fetchErrorMessage(e)
@@ -162,6 +189,20 @@ export const useMediaStore = defineStore('media', () => {
       loading.value = false
     }
   }
+
+  async function loadMore() {
+    if (loading.value) return
+    if (totalCount.value !== null && all.value.length >= totalCount.value) return
+    currentPage.value += 1
+    try {
+      await fetch(pageSize.value)
+    } catch (e) {
+      currentPage.value -= 1
+      throw e
+    }
+  }
+
+  const hasMore = computed(() => totalCount.value === null ? false : all.value.length < totalCount.value)
 
   function isUpdating(id: string) {
     return _updating.value.has(id)
@@ -189,6 +230,8 @@ export const useMediaStore = defineStore('media', () => {
       const doc = await databases.createDocument(DB_ID, COLL_MEDIA, ID.unique(), mediaData, perms())
       recent.saveRecentMediaId(doc.$id)
       if (data.type === 'series') await upsertProgress(doc.$id, { current_season: data.current_season, current_episode: data.current_episode, total_seasons, total_episodes, notes: progress_notes }, perms())
+      currentPage.value = 1
+      lastCursorCreatedAt.value = null
       await fetch()
     } catch (e) {
       console.error('[MediaTracker] Failed to create media:', e)
@@ -205,6 +248,8 @@ export const useMediaStore = defineStore('media', () => {
       await databases.updateDocument(DB_ID, COLL_MEDIA, id, mediaData)
       recent.saveRecentMediaId(id)
       if (data.type === 'series') await upsertProgress(id, { current_season: data.current_season, current_episode: data.current_episode, total_seasons, total_episodes, notes: progress_notes }, perms())
+      currentPage.value = 1
+      lastCursorCreatedAt.value = null
       await fetch()
     } catch (e) {
       console.error('[MediaTracker] Failed to update media:', e)
@@ -220,6 +265,8 @@ export const useMediaStore = defineStore('media', () => {
       const r = await databases.listDocuments(DB_ID, COLL_PROGRESS, [Query.equal('media_id', id), Query.limit(1)])
       if (r.total > 0) await databases.deleteDocument(DB_ID, COLL_PROGRESS, r.documents[0].$id)
     } catch {}
+    currentPage.value = 1
+    lastCursorCreatedAt.value = null
     await fetch()
   }
 
@@ -431,5 +478,10 @@ export const useMediaStore = defineStore('media', () => {
     sorted,
     filtered,
     searchMatches,
+    totalCount,
+    currentPage,
+    pageSize,
+    loadMore,
+    hasMore,
   }
 })
