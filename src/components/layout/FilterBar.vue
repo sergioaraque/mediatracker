@@ -298,9 +298,7 @@
 import { ref, computed, watch, onUnmounted } from 'vue'
 import { Search, ChevronDown, Star, LayoutGrid, List, X } from 'lucide-vue-next'
 import { useMediaStore } from '@/stores/media'
-import { useUiStore }    from '@/stores/ui'
 import { useSearchPresets } from '@/composables/useSearchPresets'
-import { useUiStore } from '@/stores/ui'
 import { fetchSearch, tmdbDisplayTitle, tmdbPoster } from '@/lib/tmdb'
 import { useUiStore } from '@/stores/ui'
 import type { SortField, SortOrder } from '@/stores/media'
@@ -429,19 +427,10 @@ const searchInput = ref<HTMLInputElement>()
 let debounceTimer = 0
 const showSuggestions = ref(false)
 const showPresets = ref(false)
-const ui = useUiStore()
 const { presets, add, remove } = useSearchPresets()
 const tmdbSuggestions = ref<any[]>([])
 const tmdbCache = new Map<string, any[]>()
 let tmdbTimer = 0
-const uiStore = useUiStore()
-
-function onSearchInput(e: Event) {
-  localSearch.value = (e.target as HTMLInputElement).value
-  clearTimeout(debounceTimer)
-  debounceTimer = window.setTimeout(() => { media.search = localSearch.value }, 140)
-  showSuggestions.value = true
-}
 
 watch(() => media.search, v => { if (v !== localSearch.value) localSearch.value = v })
 
@@ -520,13 +509,13 @@ function applyPreset(p: any) {
   media.filterMinRating = p.filters?.minRating ?? null
   media.filterPlatform = p.filters?.platform ?? null
   showPresets.value = false
-  uiStore.toast(`Preset "${p.name}" aplicado`)
+  ui.toast(`Preset "${p.name}" aplicado`)
 }
 
 function removePreset(id: string) {
   if (!confirm('Eliminar preset? Esta acción no se puede deshacer.')) return
   remove(id)
-  uiStore.toast('Preset eliminado', 'info')
+  ui.toast('Preset eliminado', 'info')
 }
 
 function applyTmdbSuggestion(item: any) {
@@ -534,17 +523,7 @@ function applyTmdbSuggestion(item: any) {
   localSearch.value = title
   media.search = title
   showSuggestions.value = false
-  uiStore.toast(`Sugerencia TMDB aplicada: ${title}`)
-}
-
-function applyPreset(p: any) {
-  media.search = p.query
-  localSearch.value = p.query
-  media.filterType = p.filters?.type ?? null
-  media.filterStatus = p.filters?.status ?? null
-  media.filterMinRating = p.filters?.minRating ?? null
-  media.filterPlatform = p.filters?.platform ?? null
-  showPresets.value = false
+  ui.toast(`Sugerencia TMDB aplicada: ${title}`)
 }
 
 defineExpose({ focusSearch: () => searchInput.value?.focus() })
