@@ -467,6 +467,7 @@ export const useMediaStore = defineStore('media', () => {
     setStatus,
     isUpdating,
     getProgress,
+    getStatusHistory,
     upsertProgress,
     filterType,
     filterStatus,
