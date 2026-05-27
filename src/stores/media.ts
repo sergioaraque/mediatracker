@@ -1,5 +1,5 @@
 import { defineStore }                                        from 'pinia'
-import { ref, computed }                                       from 'vue'
+import { ref, computed, watch }                                from 'vue'
 import Fuse from 'fuse.js'
 import { databases, DB_ID, COLL_MEDIA, COLL_PROGRESS, COLL_STATUS_HISTORY, Query, ID, Permission, Role } from '@/lib/appwrite'
 import { hasAppwriteDatabaseConfig, getMissingAppwriteDatabaseConfigMessage } from '@/lib/appwrite'
@@ -90,39 +90,49 @@ export const useMediaStore = defineStore('media', () => {
     if (filterMinRating.value) r = r.filter(m => (m.rating ?? 0) >= filterMinRating.value!)
     if (filterPlatform.value)  r = r.filter(m => m.platform === filterPlatform.value)
 
-    // Fuzzy search: use Fuse.js for better matching across title, genre and year
+    // Fuzzy search: use a separate computed to compute matches (no side-effects here)
+    // The actual `searchMatches` ref is updated by a watcher below.
     if (search.value) {
       try {
         const fuse = ensureFuseIndex(r)
         const results = fuse.search(search.value)
-
-        // Save match indices per id for UI highlighting
-        const matchesPerId: Record<string, Record<string, number[][]>> = {}
-        r = results.map((res: any) => {
-          const id = (res.item as Media).$id
-          matchesPerId[id] = {}
-          if (Array.isArray(res.matches)) {
-            for (const m of res.matches) {
-              const key = String(m.key)
-              matchesPerId[id][key] = (m.indices || []).map((pair: number[]) => [pair[0], pair[1]])
-            }
-          }
-          return res.item as Media
-        })
-
-        searchMatches.value = matchesPerId
+        r = results.map((res: any) => res.item as Media)
       } catch (e) {
-        // Fallback to basic substring match on error
         const q = search.value.toLowerCase()
         r = r.filter(m => (m.title?.toLowerCase() ?? '').includes(q) || (m.genre?.toLowerCase() ?? '').includes(q))
-        searchMatches.value = {}
       }
-    } else {
-      searchMatches.value = {}
     }
 
     return r
   })
+
+  // Compute matches separately and update `searchMatches` via a watcher to avoid
+  // side-effects inside a computed property.
+  const _searchMatchesComputed = computed(() => {
+    const matchesPerId: Record<string, Record<string, number[][]>> = {}
+    if (!search.value) return matchesPerId
+    try {
+      const fuse = ensureFuseIndex(sorted.value)
+      const results = fuse.search(search.value)
+      for (const res of results) {
+        const id = (res.item as Media).$id
+        matchesPerId[id] = {}
+        if (Array.isArray(res.matches)) {
+          for (const m of res.matches) {
+            const key = String(m.key)
+            matchesPerId[id][key] = (m.indices || []).map((pair: number[]) => [pair[0], pair[1]])
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return matchesPerId
+  })
+
+  watch([() => _searchMatchesComputed.value, () => search.value], () => {
+    searchMatches.value = _searchMatchesComputed.value
+  }, { immediate: true })
 
   function fetchErrorMessage(rawError: unknown) {
     const e = rawError as { message?: string; code?: number; type?: string }
@@ -202,7 +212,12 @@ export const useMediaStore = defineStore('media', () => {
     }
   }
 
-  const hasMore = computed(() => totalCount.value === null ? false : all.value.length < totalCount.value)
+  const hasMore = computed(() => {
+    if (totalCount.value !== null) return all.value.length < totalCount.value
+    // If total is unknown (cursor pagination), assume there may be more if we
+    // have a full page of items; it's a heuristic only.
+    return all.value.length > 0 && all.value.length % pageSize.value === 0
+  })
 
   function isUpdating(id: string) {
     return _updating.value.has(id)
@@ -264,7 +279,9 @@ export const useMediaStore = defineStore('media', () => {
     try {
       const r = await databases.listDocuments(DB_ID, COLL_PROGRESS, [Query.equal('media_id', id), Query.limit(1)])
       if (r.total > 0) await databases.deleteDocument(DB_ID, COLL_PROGRESS, r.documents[0].$id)
-    } catch {}
+    } catch (e) {
+      console.warn('[MediaTracker] Failed to remove associated progress document:', e)
+    }
     currentPage.value = 1
     lastCursorCreatedAt.value = null
     await fetch()
@@ -385,7 +402,7 @@ export const useMediaStore = defineStore('media', () => {
       from_status: from,
       to_status:   to,
       changed_at:  new Date().toISOString(),
-    }, p).catch(() => { /* non-critical */ })
+    }, p).catch((err) => { console.warn('[MediaTracker] Failed to log status change', err) })
   }
 
   async function getStatusHistory(mediaId: string): Promise<StatusHistory[]> {
@@ -398,12 +415,15 @@ export const useMediaStore = defineStore('media', () => {
   }
 
   async function checkReminders() {
+    // Guard for non-browser environments
+    if (typeof window === 'undefined' || typeof Notification === 'undefined') return
+
     // Skip if permission not granted, but offer to request it
     if (Notification.permission === 'denied') {
       console.info('[MediaTracker] Notifications denied by user')
       return
     }
-    
+
     // Request permission if not yet asked
     if (Notification.permission !== 'granted') {
       try {
@@ -444,7 +464,7 @@ export const useMediaStore = defineStore('media', () => {
     return r.total > 0 ? (r.documents[0] as unknown as Progress) : null
   }
 
-  async function upsertProgress(mediaId: string, data: Partial<Progress>, p?: string[]) {
+  async function upsertProgress(mediaId: string, data: Partial<Progress>, p?: unknown[]) {
     const r = await databases.listDocuments(DB_ID, COLL_PROGRESS, [Query.equal('media_id', mediaId), Query.limit(1)])
     if (r.total > 0) {
       await databases.updateDocument(DB_ID, COLL_PROGRESS, r.documents[0].$id, data)

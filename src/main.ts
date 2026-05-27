@@ -36,5 +36,5 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
         }
       })
     })
-  }).catch(() => {})
+  }).catch((err) => { console.warn('[MediaTracker] Service worker registration failed', err) })
 }

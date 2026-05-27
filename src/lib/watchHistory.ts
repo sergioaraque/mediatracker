@@ -25,7 +25,7 @@ function load(): Record<string, WatchEntry[]> {
     }
     return cleaned
   }
-  catch { return {} }
+  catch (e) { console.warn('[MediaTracker] Failed to parse watch history from localStorage', e); return {} }
 }
 
 export function addWatchEntry(mediaId: string): void {

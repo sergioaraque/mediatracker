@@ -110,7 +110,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function logout() {
-    try { await account.deleteSession('current') } catch {}
+    try { await account.deleteSession('current') } catch (e) { console.warn('[Auth] Failed to delete session during logout', e) }
     user.value = null
     initialized.value = true
     loading.value = false

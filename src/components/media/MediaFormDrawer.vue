@@ -354,10 +354,11 @@ const previewGradient = computed(() => ({
 }[form.value.type]))
 
 /* ── Reminders ────────────────────────────────────────────── */
-const notifGranted = ref(Notification.permission === 'granted')
+const notifGranted = ref(typeof Notification !== 'undefined' && Notification.permission === 'granted')
 const minDateTime  = computed(() => new Date(Date.now() + 60_000).toISOString().slice(0, 16))
 
 async function requestNotifPermission() {
+  if (typeof Notification === 'undefined') return
   if (Notification.permission === 'granted') return
   const result = await Notification.requestPermission()
   notifGranted.value = result === 'granted'

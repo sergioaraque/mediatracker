@@ -7,7 +7,7 @@ export function getQueue(): string[] {
     if (!Array.isArray(data)) return []
     return data.every(id => typeof id === 'string') ? data : []
   }
-  catch { return [] }
+  catch (e) { console.warn('[MediaTracker] Failed to parse watch queue from localStorage', e); return [] }
 }
 
 export function setQueue(ids: string[]): void {

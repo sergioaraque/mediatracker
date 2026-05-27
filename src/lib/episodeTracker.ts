@@ -20,7 +20,7 @@ function load(): EpData {
     }
     return cleaned
   }
-  catch { return {} }
+  catch (e) { console.warn('[MediaTracker] Failed to parse episode tracker from localStorage', e); return {} }
 }
 
 function save(data: EpData): void {
