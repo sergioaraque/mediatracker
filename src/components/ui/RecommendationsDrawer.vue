@@ -113,10 +113,11 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { ArrowLeft, Sparkles, Star, Plus, Check, Loader2, AlertCircle, Film, Tv } from 'lucide-vue-next'
-import { fetchRecommendations, tmdbPoster, tmdbYear, tmdbDisplayTitle, type TmdbRecommendation } from '@/lib/tmdb'
+import { tmdbPoster, tmdbYear, tmdbDisplayTitle, type TmdbRecommendation } from '@/lib/tmdb'
 import { useMediaStore } from '@/stores/media'
 import { useUiStore }    from '@/stores/ui'
 import type { Media }    from '@/types'
+import { useRecommendationsStore } from '@/stores/recommendations'
 
 const props = defineProps<{ modelValue: boolean; media: Media | null }>()
 const emit  = defineEmits<{ 'update:modelValue': [v: boolean] }>()
@@ -128,6 +129,7 @@ const error   = ref(false)
 const results = ref<TmdbRecommendation[]>([])
 const adding  = ref(new Set<number>())
 const added   = ref(new Set<number>())
+const recs    = useRecommendationsStore()
 
 const typeIcon    = props.media?.type === 'series' ? Tv : Film
 const gradientClass = props.media?.type === 'series'
@@ -142,7 +144,7 @@ watch(() => props.modelValue, async (v) => {
   added.value   = new Set()
   loading.value = true
   try {
-    results.value = await fetchRecommendations(props.media.title, props.media.type as 'movie' | 'series')
+    results.value = await recs.combinedFor({ title: props.media.title, type: props.media.type })
     if (!results.value.length) error.value = true
   } catch {
     error.value = true

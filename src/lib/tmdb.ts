@@ -70,6 +70,32 @@ export async function fetchSearch(query: string, type?: 'movie' | 'tv'): Promise
   return results.slice(0, 20)
 }
 
+export async function fetchTvDetailsById(id: number): Promise<any> {
+  const res = await get<any>(`/tv/${id}?append_to_response=external_ids`)
+  return res
+}
+
+export async function fetchNextEpisodeByTitle(title: string): Promise<{ air_date: string | null; season_number?: number; episode_number?: number; episode_name?: string; tmdb_id?: number } | null> {
+  if (!title.trim()) return null
+  try {
+    const search = await get<{ results: { id: number }[] }>(`/search/tv?query=${encodeURIComponent(title)}`)
+    if (!search.results?.length) return null
+    const id = search.results[0].id
+    const details = await fetchTvDetailsById(id)
+    const next = details.next_episode_to_air
+    if (!next) return null
+    return {
+      air_date: next.air_date ?? null,
+      season_number: next.season_number,
+      episode_number: next.episode_number,
+      episode_name: next.name,
+      tmdb_id: id,
+    }
+  } catch {
+    return null
+  }
+}
+
 export async function fetchDiscover(
   type: 'movie' | 'tv',
   opts: {

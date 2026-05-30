@@ -34,9 +34,20 @@
                 <ChevronRight class="w-3.5 h-3.5" />
               </button>
             </div>
-            <button @click="$emit('update:modelValue', false)" class="drawer-close">
-              <X class="w-5 h-5" />
-            </button>
+            <div class="flex items-center gap-2">
+              <button @click="exportIcs" title="Exportar calendario (.ics)" class="text-sm px-3 py-1 rounded-lg bg-white/4 hover:bg-white/6 transition-colors text-gray-200">
+                Exportar .ics
+              </button>
+              <button @click="exportUpcomingEpisodes" title="Agregar episodios próximos al calendario" class="text-sm px-3 py-1 rounded-lg bg-white/4 hover:bg-white/6 transition-colors text-gray-200">
+                Episodios próximos
+              </button>
+              <button @click="requestNotifications" title="Permitir notificaciones" class="text-sm px-3 py-1 rounded-lg bg-white/4 hover:bg-white/6 transition-colors text-gray-200">
+                Notificaciones
+              </button>
+              <button @click="$emit('update:modelValue', false)" class="drawer-close">
+                <X class="w-5 h-5" />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -153,6 +164,8 @@ import { ref, computed, watch } from 'vue'
 import { X, CalendarDays, ChevronLeft, ChevronRight, Trophy, Star } from 'lucide-vue-next'
 import { useMediaStore } from '@/stores/media'
 import type { Media } from '@/types'
+import { generateIcsFromHistory, downloadIcs, generateIcsFromUpcoming } from '@/lib/calendar'
+import { fetchNextEpisodeByTitle } from '@/lib/tmdb'
 
 defineEmits<{ 'update:modelValue': [v: boolean] }>()
 
@@ -253,6 +266,50 @@ const formatSelectedDay = computed(() => {
 function selectDay(month: number, day: number) {
   const key = dayKey(month, day)
   selectedDay.value = selectedDay.value === key ? null : key
+}
+
+async function exportIcs() {
+  const items = media.all
+  const ics = generateIcsFromHistory(items, { year: year.value })
+  downloadIcs(ics, `mediatracker-${year.value}.ics`)
+}
+
+async function requestNotifications() {
+  if (typeof Notification === 'undefined') return
+  try {
+    const p = await Notification.requestPermission()
+    if (p === 'granted') {
+      // Trigger a check (store will handle showing and clearing reminders)
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
+      media.checkReminders()
+    }
+  } catch (e) { console.warn(e) }
+}
+
+async function exportUpcomingEpisodes() {
+  const upcoming: Array<{ date: string; title: string; subtitle?: string; uid?: string }>= []
+  const now = new Date()
+  const series = media.all.filter(m => m.type === 'series')
+  for (const s of series) {
+    try {
+      const next = await fetchNextEpisodeByTitle(s.title)
+      if (next && next.air_date) {
+        const d = new Date(next.air_date + 'T00:00:00')
+        if (d > now) {
+          upcoming.push({ date: next.air_date, title: `${s.title} — S${String(next.season_number).padStart(2,'0')}E${String(next.episode_number).padStart(2,'0')}`, subtitle: next.episode_name ?? '' , uid: `${s.$id}-${next.air_date}` })
+          // Optionally set a reminder on the media one day before airing
+          const remindAt = new Date(d.getTime() - 24 * 60 * 60 * 1000).toISOString()
+          try { await media.setRemindAt(s.$id, remindAt) } catch { /* ignore */ }
+        }
+      }
+    } catch (e) { /* continue */ }
+  }
+  if (!upcoming.length) {
+    // show toast via ui store if available
+    return
+  }
+  const ics = generateIcsFromUpcoming(upcoming)
+  downloadIcs(ics, `mediatracker-upcoming-${year.value}.ics`)
 }
 </script>
 

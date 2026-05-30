@@ -464,12 +464,24 @@ export const useMediaStore = defineStore('media', () => {
     return r.total > 0 ? (r.documents[0] as unknown as Progress) : null
   }
 
-  async function upsertProgress(mediaId: string, data: Partial<Progress>, p?: unknown[]) {
+  async function upsertProgress(mediaId: string, data: Partial<Progress>, p?: any[]) {
     const r = await databases.listDocuments(DB_ID, COLL_PROGRESS, [Query.equal('media_id', mediaId), Query.limit(1)])
     if (r.total > 0) {
       await databases.updateDocument(DB_ID, COLL_PROGRESS, r.documents[0].$id, data)
     } else {
       await databases.createDocument(DB_ID, COLL_PROGRESS, ID.unique(), { ...data, media_id: mediaId }, p)
+    }
+  }
+
+  async function setRemindAt(mediaId: string, datetime: string | null) {
+    if (!hasAppwriteDatabaseConfig) throw new Error(getMissingAppwriteDatabaseConfigMessage())
+    try {
+      await databases.updateDocument(DB_ID, COLL_MEDIA, mediaId, { remind_at: datetime })
+      const item = all.value.find(m => m.$id === mediaId)
+      if (item) item.remind_at = datetime
+    } catch (e) {
+      console.warn('[MediaTracker] Failed to set remind_at', e)
+      throw e
     }
   }
 
@@ -489,6 +501,7 @@ export const useMediaStore = defineStore('media', () => {
     getProgress,
     getStatusHistory,
     upsertProgress,
+    setRemindAt,
     filterType,
     filterStatus,
     filterMinRating,
