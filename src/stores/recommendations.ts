@@ -6,6 +6,8 @@ import { useMediaStore } from './media'
 
 export const useRecommendationsStore = defineStore('recommendations', () => {
   const cache = ref<Record<string, TmdbRecommendation[]>>({})
+  const cacheTimestamps = ref<Record<string, number>>({})
+  const CACHE_TTL_MS = 1000 * 60 * 60 // 1h
 
   // Simple local-similarity using Fuse on user's collection
   function localSimilar(targetTitle: string, mediaList: any[], limit = 6) {
@@ -26,7 +28,8 @@ export const useRecommendationsStore = defineStore('recommendations', () => {
 
   async function combinedFor(media: { title: string; type?: string }, limit = 12) {
     const key = `${media.title}::${media.type}`
-    if (cache.value[key]) return cache.value[key].slice(0, limit)
+    const ts = cacheTimestamps.value[key]
+    if (cache.value[key] && ts && (Date.now() - ts) < CACHE_TTL_MS) return cache.value[key].slice(0, limit)
 
     const mediaStore = useMediaStore()
     // 1) TMDB recommendations (preferential)
