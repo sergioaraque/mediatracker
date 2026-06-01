@@ -228,6 +228,21 @@
                 <p v-if="!notifGranted && form.remind_at" class="text-amber-400/70 text-xs mt-1.5 flex items-center gap-1">
                   <AlertTriangle class="w-3 h-3 shrink-0" /> Necesitas permitir notificaciones en tu navegador
                 </p>
+                <div class="mt-3 flex flex-wrap gap-2">
+                  <button type="button" class="pill-btn" @click="setRelativeReminder(1)">1 día</button>
+                  <button type="button" class="pill-btn" @click="setRelativeReminder(3)">3 días</button>
+                  <button type="button" class="pill-btn" @click="setRelativeReminder(7)">1 semana</button>
+                  <button
+                    v-if="form.type === 'series'"
+                    type="button"
+                    class="pill-btn pill-btn--accent inline-flex items-center gap-1.5"
+                    :disabled="nextEpisodeReminderLoading"
+                    @click="setNextEpisodeReminder"
+                  >
+                    <Loader2 v-if="nextEpisodeReminderLoading" class="w-3 h-3 animate-spin" />
+                    <span v-else>Próximo episodio</span>
+                  </button>
+                </div>
               </div>
 
               <!-- Series section -->
@@ -289,6 +304,7 @@ import { X, ChevronDown, Star, Tv, Loader2, Search, AlertTriangle, Bell, Youtube
 import { Film, BookOpen } from 'lucide-vue-next'
 import { useMediaStore } from '@/stores/media'
 import { useUiStore } from '@/stores/ui'
+import { fetchNextEpisodeByTitle } from '@/lib/tmdb'
 import { getCachedData } from '@/lib/tmdbCache'
 import { isValidUrl, escapeHtml } from '@/lib/security'
 import type { Media, MediaFormData } from '@/types'
@@ -306,6 +322,7 @@ const store   = useMediaStore()
 const ui      = useUiStore()
 const saving  = ref(false)
 const imgError = ref(false)
+const nextEpisodeReminderLoading = ref(false)
 const editId  = computed(() => props.editMedia?.$id ?? null)
 const currentYear = new Date().getFullYear()
 
@@ -362,6 +379,31 @@ async function requestNotifPermission() {
   if (Notification.permission === 'granted') return
   const result = await Notification.requestPermission()
   notifGranted.value = result === 'granted'
+}
+
+function setRelativeReminder(days: number) {
+  const target = new Date(Date.now() + days * 24 * 60 * 60 * 1000)
+  form.value.remind_at = target.toISOString()
+  void requestNotifPermission()
+}
+
+async function setNextEpisodeReminder() {
+  if (form.value.type !== 'series' || !form.value.title.trim()) return
+  nextEpisodeReminderLoading.value = true
+  try {
+    const next = await fetchNextEpisodeByTitle(form.value.title)
+    if (!next?.air_date) {
+      ui.toast('No se encontró próxima emisión para esta serie', 'error')
+      return
+    }
+    form.value.remind_at = new Date(`${next.air_date}T09:00:00`).toISOString()
+    ui.toast('Recordatorio configurado para la próxima emisión')
+    void requestNotifPermission()
+  } catch {
+    ui.toast('No se pudo calcular el próximo episodio', 'error')
+  } finally {
+    nextEpisodeReminderLoading.value = false
+  }
 }
 
 /* ── Platforms ────────────────────────────────────────────── */
@@ -540,4 +582,26 @@ async function submit() {
 
 .fade-enter-active, .fade-leave-active { transition: all .2s ease; }
 .fade-enter-from, .fade-leave-to       { opacity: 0; transform: translateY(-.5rem); }
+
+.pill-btn {
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.04);
+  color: rgba(255,255,255,.8);
+  border-radius: 9999px;
+  padding: .35rem .7rem;
+  font-size: .75rem;
+  font-weight: 700;
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease;
+}
+
+.pill-btn:hover {
+  background: rgba(255,255,255,.08);
+  color: white;
+}
+
+.pill-btn--accent {
+  border-color: rgba(167,139,250,.35);
+  background: rgba(139,92,246,.12);
+  color: rgb(221,214,254);
+}
 </style>

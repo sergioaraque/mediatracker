@@ -221,7 +221,7 @@
     <AdvancedDiscoveryDrawer v-model="advancedDiscoveryDrawer" />
 
     <!-- Search drawer -->
-    <SearchDrawer v-model="searchDrawer" />
+    <SearchDrawer v-model="searchDrawer" @detail="openDetail" />
 
     <!-- Queue drawer -->
     <QueueDrawer v-model="queueDrawer" />

@@ -111,7 +111,7 @@ export async function fetchDiscover(
   const p = new URLSearchParams()
   if (opts.genreIds?.length)   p.set('with_genres', opts.genreIds.join(','))
   if (opts.minRating) p.set('vote_average.gte', String(opts.minRating))
-  if (opts.castIds?.length && type === 'movie') p.set('with_cast', opts.castIds.join(','))
+  if (opts.castIds?.length) p.set('with_cast', opts.castIds.join(','))
   p.set('sort_by', 'vote_count.desc')
   
   if (type === 'movie') {

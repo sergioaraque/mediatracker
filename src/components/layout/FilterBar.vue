@@ -37,6 +37,24 @@
         </Transition>
       </div>
 
+      <!-- Smart lists -->
+      <div class="flex items-center gap-2 px-4 sm:px-6 lg:px-8 pb-2 overflow-x-auto scrollbar-none">
+        <span class="text-[10px] font-bold uppercase tracking-[0.22em] text-gray-500 shrink-0">Listas inteligentes</span>
+        <button
+          v-for="list in smartLists"
+          :key="list.key"
+          @click="applySmartList(list.key)"
+          class="inline-flex items-center gap-2 px-3 py-2 rounded-2xl border text-sm font-semibold transition-all duration-200 shrink-0"
+          :class="activeSmartList === list.key
+            ? list.activeClass
+            : 'bg-white/4 border-white/8 text-gray-400 hover:bg-white/8 hover:text-gray-200 hover:border-white/15'"
+        >
+          <span>{{ list.emoji }}</span>
+          <span>{{ list.label }}</span>
+          <span class="text-xs font-bold px-1.5 py-0.5 rounded-full leading-none" :class="activeSmartList === list.key ? list.countClass : 'bg-white/8 text-gray-500'">{{ list.count }}</span>
+        </button>
+      </div>
+
       <!-- ── Row 2 desktop: primary controls ────────────────────────── -->
       <div class="hidden md:flex items-center gap-2 px-4 sm:px-6 lg:px-8 pb-3">
 
@@ -373,6 +391,98 @@ const advancedFilterCount = computed(() =>
   Number(media.filterMinRating !== null) + Number(media.filterPlatform !== null)
 )
 
+type SmartListKey = 'watching' | 'pending' | 'topRated' | 'recent' | 'series' | 'books'
+
+const smartLists = computed(() => [
+  {
+    key: 'watching' as const,
+    emoji: '▶️',
+    label: 'En marcha',
+    count: media.all.filter(m => m.status === 'watching').length,
+    activeClass: 'bg-blue-500/15 border-blue-500/35 text-blue-100 shadow-lg shadow-blue-500/10',
+    countClass: 'bg-blue-500/25 text-blue-200',
+  },
+  {
+    key: 'pending' as const,
+    emoji: '⏳',
+    label: 'Pendientes',
+    count: media.all.filter(m => m.status === 'pending').length,
+    activeClass: 'bg-amber-500/15 border-amber-500/35 text-amber-100 shadow-lg shadow-amber-500/10',
+    countClass: 'bg-amber-500/25 text-amber-200',
+  },
+  {
+    key: 'topRated' as const,
+    emoji: '★',
+    label: 'Top 8+',
+    count: media.all.filter(m => (m.rating ?? 0) >= 8).length,
+    activeClass: 'bg-emerald-500/15 border-emerald-500/35 text-emerald-100 shadow-lg shadow-emerald-500/10',
+    countClass: 'bg-emerald-500/25 text-emerald-200',
+  },
+  {
+    key: 'recent' as const,
+    emoji: '🆕',
+    label: 'Recientes',
+    count: media.all.filter(m => Date.now() - new Date(m.$createdAt).getTime() < 1000 * 60 * 60 * 24 * 30).length,
+    activeClass: 'bg-violet-500/15 border-violet-500/35 text-violet-100 shadow-lg shadow-violet-500/10',
+    countClass: 'bg-violet-500/25 text-violet-200',
+  },
+  {
+    key: 'series' as const,
+    emoji: '📺',
+    label: 'Series',
+    count: media.all.filter(m => m.type === 'series').length,
+    activeClass: 'bg-cyan-500/15 border-cyan-500/35 text-cyan-100 shadow-lg shadow-cyan-500/10',
+    countClass: 'bg-cyan-500/25 text-cyan-200',
+  },
+  {
+    key: 'books' as const,
+    emoji: '📚',
+    label: 'Libros',
+    count: media.all.filter(m => m.type === 'book').length,
+    activeClass: 'bg-amber-500/15 border-amber-500/35 text-amber-100 shadow-lg shadow-amber-500/10',
+    countClass: 'bg-amber-500/25 text-amber-200',
+  },
+])
+
+const activeSmartList = ref<SmartListKey | null>(null)
+
+function applySmartList(key: SmartListKey) {
+  activeSmartList.value = key
+  media.search = ''
+  localSearch.value = ''
+  media.filterType = null
+  media.filterStatus = null
+  media.filterMinRating = null
+  media.filterPlatform = null
+
+  if (key === 'watching') media.filterStatus = 'watching'
+  if (key === 'pending') media.filterStatus = 'pending'
+  if (key === 'topRated') {
+    media.filterMinRating = 8
+    media.sortField = 'rating'
+    media.sortOrder = 'DESC'
+  }
+  if (key === 'recent') {
+    media.sortField = '$createdAt'
+    media.sortOrder = 'DESC'
+  }
+  if (key === 'series') media.filterType = 'series'
+  if (key === 'books') media.filterType = 'book'
+}
+
+watch([() => media.filterType, () => media.filterStatus, () => media.filterMinRating, () => media.filterPlatform, () => media.search], () => {
+  const matched = smartLists.value.find(list => {
+    if (list.key === 'watching') return media.filterStatus === 'watching' && !media.filterType && !media.filterMinRating && !media.filterPlatform && !media.search
+    if (list.key === 'pending') return media.filterStatus === 'pending' && !media.filterType && !media.filterMinRating && !media.filterPlatform && !media.search
+    if (list.key === 'topRated') return media.filterMinRating === 8 && media.sortField === 'rating' && media.sortOrder === 'DESC'
+    if (list.key === 'recent') return media.sortField === '$createdAt' && media.sortOrder === 'DESC' && !media.filterType && !media.filterStatus && !media.filterMinRating && !media.filterPlatform && !media.search
+    if (list.key === 'series') return media.filterType === 'series' && !media.filterStatus && !media.filterMinRating && !media.filterPlatform && !media.search
+    if (list.key === 'books') return media.filterType === 'book' && !media.filterStatus && !media.filterMinRating && !media.filterPlatform && !media.search
+    return false
+  })
+  activeSmartList.value = matched?.key ?? null
+})
+
 const activeFilters = computed(() => {
   const filters: Array<{ key: string; label: string; clear: () => void }> = []
 
@@ -410,6 +520,7 @@ function clearAllFilters() {
   media.filterPlatform  = null
   media.search          = ''
   localSearch.value     = ''
+  activeSmartList.value = null
 }
 
 function clearSearch() {

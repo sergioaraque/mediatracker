@@ -146,6 +146,38 @@
           </p>
         </div>
 
+        <!-- Local matches -->
+        <div v-if="query.trim() && localResults.length" class="px-4 py-3 border-b border-white/6 shrink-0">
+          <div class="flex items-center justify-between mb-2">
+            <p class="text-[10px] font-bold text-gray-600 uppercase tracking-widest">En tu colección</p>
+            <span class="text-[10px] text-gray-500">{{ localResults.length }} coincidencias</span>
+          </div>
+          <div class="space-y-2 max-h-52 overflow-y-auto pr-1">
+            <button
+              v-for="item in localResults"
+              :key="item.$id"
+              class="w-full flex items-center gap-3 p-2.5 rounded-xl bg-white/4 border border-white/6 hover:bg-white/7 hover:border-white/10 transition-colors text-left"
+              @click="openLocal(item)"
+            >
+              <div class="w-10 h-14 rounded-lg overflow-hidden shrink-0 border border-white/8">
+                <img v-if="item.cover_url" :src="item.cover_url" :alt="item.title" class="w-full h-full object-cover" loading="lazy" />
+                <div v-else class="w-full h-full flex items-center justify-center" :class="gradientMap[item.type]">
+                  <component :is="iconMap[item.type]" class="w-3.5 h-3.5 text-white/30" />
+                </div>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-semibold text-white truncate leading-snug">{{ item.title }}</p>
+                <div class="flex items-center gap-1.5 mt-0.5">
+                  <span class="text-[10px] font-bold uppercase tracking-wide" :class="typeColor[item.type]">{{ typeLabel[item.type] }}</span>
+                  <span v-if="item.year" class="text-[10px] text-gray-600">· {{ item.year }}</span>
+                  <span class="text-[10px] font-medium" :class="statusColor[item.status]">· {{ statusLabel[item.status] }}</span>
+                </div>
+              </div>
+              <span class="text-[10px] font-bold text-violet-300 shrink-0">Abrir</span>
+            </button>
+          </div>
+        </div>
+
         <!-- Content -->
         <div class="flex-1 overflow-y-auto">
 
@@ -247,9 +279,10 @@ import { X, Search, SearchX, Star, Plus, Check, Loader2, SlidersHorizontal, Chev
 import { fetchSearch, fetchDiscover, tmdbPoster, tmdbYear, tmdbDisplayTitle, type TmdbRecommendation } from '@/lib/tmdb'
 import { useMediaStore } from '@/stores/media'
 import { useUiStore }    from '@/stores/ui'
+import type { Media } from '@/types'
 
 const props = defineProps<{ modelValue: boolean }>()
-const emit  = defineEmits<{ 'update:modelValue': [v: boolean] }>()
+const emit  = defineEmits<{ 'update:modelValue': [v: boolean]; detail: [m: Media] }>()
 
 const media   = useMediaStore()
 const ui      = useUiStore()
@@ -312,6 +345,17 @@ const activeFiltersCount = computed(() =>
     .filter(v => v !== null).length
 )
 
+const localResults = computed(() => {
+  const q = query.value.trim().toLowerCase()
+  if (!q) return media.all.slice(0, 6)
+  return media.all.filter(item =>
+    item.title?.toLowerCase().includes(q) ||
+    item.genre?.toLowerCase().includes(q) ||
+    item.platform?.toLowerCase().includes(q) ||
+    item.description?.toLowerCase().includes(q)
+  ).slice(0, 6)
+})
+
 // Auto-search on query change (debounced)
 let debounceTimer: ReturnType<typeof setTimeout>
 watch(query, (q) => {
@@ -370,7 +414,7 @@ async function runSearch() {
       // Discover mode — filter-only, no text
       const discoverType = activeType.value === 'all' ? 'movie' : activeType.value
       results.value = await fetchDiscover(discoverType, {
-        genreId:   filterGenre.value     ?? undefined,
+        genreIds:  filterGenre.value ? [filterGenre.value] : undefined,
         yearFrom:  filterYearFrom.value  ?? undefined,
         yearTo:    filterYearTo.value    ?? undefined,
         minRating: filterMinRating.value ?? undefined,
@@ -389,6 +433,11 @@ function clearFilters() {
   filterYearFrom.value  = null
   filterYearTo.value    = null
   filterMinRating.value = null
+}
+
+function openLocal(item: Media) {
+  emit('detail', item)
+  close()
 }
 
 function inCollection(item: TmdbRecommendation): boolean {

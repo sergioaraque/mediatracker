@@ -502,6 +502,7 @@ export const useMediaStore = defineStore('media', () => {
     getStatusHistory,
     upsertProgress,
     setRemindAt,
+    checkReminders,
     filterType,
     filterStatus,
     filterMinRating,
