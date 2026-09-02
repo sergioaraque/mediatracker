@@ -3,13 +3,15 @@
     <div class="max-w-7xl mx-auto">
 
       <!-- ── Row 1: Section navigation ────────────────────────────── -->
-      <div class="flex gap-2 px-4 sm:px-6 lg:px-8 pt-3 pb-2.5 overflow-x-auto scrollbar-none">
+      <div class="flex items-center gap-2 px-4 sm:px-6 lg:px-8 pt-3 pb-2.5 overflow-x-auto scrollbar-none">
+        <span class="text-[10px] font-bold uppercase tracking-[0.22em] text-gray-500 shrink-0">Tipo</span>
         <button
           v-for="s in sections"
           :key="s.key"
-          @click="media.filterType = s.type"
+          @click="toggleTypeFilter(s.type)"
           class="section-tab flex items-center gap-2.5 px-4 py-2.5 rounded-2xl border font-medium text-sm transition-all duration-200 shrink-0 relative overflow-hidden"
           :class="media.filterType === s.type ? s.activeClass : 'bg-white/4 border-white/8 text-gray-400 hover:bg-white/8 hover:text-gray-200 hover:border-white/15'"
+          :aria-pressed="media.filterType === s.type"
         >
           <span class="text-base leading-none select-none">{{ s.emoji }}</span>
           <span class="font-semibold">{{ s.label }}</span>
@@ -36,6 +38,9 @@
           </button>
         </Transition>
       </div>
+      <div class="px-4 sm:px-6 lg:px-8 pb-2">
+        <p class="text-[11px] text-gray-500">Tip: toca de nuevo un filtro activo para quitarlo.</p>
+      </div>
 
       <!-- Smart lists -->
       <div class="flex items-center gap-2 px-4 sm:px-6 lg:px-8 pb-2 overflow-x-auto scrollbar-none">
@@ -55,18 +60,17 @@
         </button>
       </div>
 
+      <!-- Results count -->
+      <div class="px-4 sm:px-6 lg:px-8 pb-2">
+        <div class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-gray-300">
+          <span class="font-semibold text-white">{{ media.filtered.length }}</span>
+          <span>resultados</span>
+          <span class="text-gray-500">de {{ media.all.length }}</span>
+        </div>
+      </div>
+
       <!-- ── Row 2 desktop: primary controls ────────────────────────── -->
       <div class="hidden md:flex items-center gap-2 px-4 sm:px-6 lg:px-8 pb-3">
-
-        <!-- Status pills -->
-        <div class="flex items-center gap-1.5 shrink-0">
-          <StatusPill
-            v-for="s in statuses" :key="s.value"
-            :active="media.filterStatus === s.value" :color="s.color"
-            @click="media.filterStatus = media.filterStatus === s.value ? null : s.value"
-          >{{ s.label }}</StatusPill>
-        </div>
-
         <div class="flex-1" />
 
         <!-- Search — prominente -->
@@ -181,15 +185,8 @@
         </div>
       </div>
 
-      <!-- ── Row 2 mobile: chips + sort + view ──────────────────────── -->
+      <!-- ── Row 2 mobile: sort + advanced + view ───────────────────── -->
       <div class="md:hidden flex items-center gap-2 px-4 pb-2 overflow-x-auto scrollbar-none">
-        <StatusPill
-          v-for="s in statuses" :key="s.value"
-          :active="media.filterStatus === s.value" :color="s.color"
-          @click="media.filterStatus = media.filterStatus === s.value ? null : s.value"
-          class="shrink-0"
-        >{{ s.label }}</StatusPill>
-
         <div class="relative shrink-0">
           <select
             :value="media.sortField + ':' + media.sortOrder" @change="onSortChange"
@@ -198,6 +195,8 @@
             <option value="$createdAt:DESC">Reciente</option>
             <option value="$createdAt:ASC">Más antiguo</option>
             <option value="title:ASC">A-Z</option>
+            <option value="title:DESC">Z-A</option>
+            <option value="year:DESC">Año ↓</option>
             <option value="rating:DESC">Mejor nota</option>
           </select>
           <ChevronDown class="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
@@ -210,7 +209,7 @@
             ? 'bg-violet-500/15 text-violet-200 border-violet-500/35'
             : 'bg-white/5 text-gray-400 border-white/10'"
         >
-          Filtros
+          Filtros avanzados
           <span v-if="advancedFilterCount > 0" class="text-[10px] font-bold">{{ advancedFilterCount }}</span>
         </button>
 
@@ -271,35 +270,67 @@
           class="px-4 sm:px-6 lg:px-8 pb-3"
         >
           <div class="rounded-2xl border border-white/10 bg-white/5 p-3 md:p-4">
-            <div class="flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
-              <div class="flex items-center gap-1 shrink-0 overflow-x-auto scrollbar-none pb-1 md:pb-0">
-                <button
-                  v-for="r in ratingFilters" :key="r"
-                  @click="media.filterMinRating = media.filterMinRating === r ? null : r"
-                  class="flex items-center gap-0.5 px-2 py-1 rounded-lg text-[11px] font-bold border transition-all shrink-0"
-                  :class="media.filterMinRating === r
-                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                    : 'text-gray-500 hover:text-amber-300 hover:bg-amber-500/10 border-transparent'"
-                ><Star class="w-2.5 h-2.5 fill-current" />{{ r }}+</button>
+            <div class="mb-3">
+              <h3 class="text-sm font-semibold text-white">Filtros avanzados</h3>
+              <p class="text-xs text-gray-400 mt-1">Estado, nota y plataforma en un solo lugar.</p>
+            </div>
+            <div class="space-y-3">
+              <div class="rounded-xl border border-white/10 bg-black/20 p-3">
+                <div class="mb-2 flex items-center justify-between">
+                  <span class="text-xs font-bold uppercase tracking-wide text-gray-400">Estado</span>
+                  <span class="text-[11px] text-gray-500">Toca para activar o quitar</span>
+                </div>
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <StatusPill
+                    v-for="s in statuses" :key="s.value"
+                    :active="media.filterStatus === s.value" :color="s.color"
+                    @click="toggleStatusFilter(s.value)"
+                  >{{ s.label }}</StatusPill>
+                </div>
               </div>
 
-              <div class="relative md:w-52">
-                <select
-                  :value="media.filterPlatform ?? ''"
-                  @change="e => media.filterPlatform = (e.target as HTMLSelectElement).value || null"
-                  class="input text-sm py-2 pr-8 appearance-none cursor-pointer"
-                  :class="media.filterPlatform ? 'border-violet-500/40 text-white' : 'text-gray-400'"
-                >
-                  <option value="">Todas las plataformas</option>
-                  <option v-for="p in PLATFORMS" :key="p" :value="p">{{ p }}</option>
-                </select>
-                <ChevronDown class="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+              <div class="rounded-xl border border-white/10 bg-black/20 p-3">
+                <div class="mb-2 flex items-center justify-between">
+                  <span class="text-xs font-bold uppercase tracking-wide text-gray-400">Nota mínima</span>
+                  <span class="text-[11px] text-gray-500">Toca para activar o quitar</span>
+                </div>
+                <div class="flex items-center gap-1 shrink-0 overflow-x-auto scrollbar-none">
+                  <button
+                    v-for="r in ratingFilters" :key="r"
+                    @click="toggleRatingFilter(r)"
+                    class="flex items-center gap-0.5 px-2 py-1 rounded-lg text-[11px] font-bold border transition-all shrink-0"
+                    :class="media.filterMinRating === r
+                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                      : 'text-gray-500 hover:text-amber-300 hover:bg-amber-500/10 border-transparent'"
+                  ><Star class="w-2.5 h-2.5 fill-current" />{{ r }}+</button>
+                </div>
               </div>
 
+              <div class="rounded-xl border border-white/10 bg-black/20 p-3">
+                <div class="mb-2 flex items-center justify-between">
+                  <span class="text-xs font-bold uppercase tracking-wide text-gray-400">Plataforma</span>
+                  <span class="text-[11px] text-gray-500">Selecciona una o todas</span>
+                </div>
+                <div class="relative md:w-64">
+                  <select
+                    :value="media.filterPlatform ?? ''"
+                    @change="e => media.filterPlatform = (e.target as HTMLSelectElement).value || null"
+                    class="input text-sm py-2 pr-8 appearance-none cursor-pointer"
+                    :class="media.filterPlatform ? 'border-violet-500/40 text-white' : 'text-gray-400'"
+                  >
+                    <option value="">Todas las plataformas</option>
+                    <option v-for="p in PLATFORMS" :key="p" :value="p">{{ p }}</option>
+                  </select>
+                  <ChevronDown class="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-3 flex justify-end">
               <button
                 v-if="advancedFilterCount > 0"
                 @click="clearAdvancedFilters"
-                class="btn-ghost text-xs px-3 py-2 rounded-lg self-start md:self-auto"
+                class="btn-ghost text-xs px-3 py-2 rounded-lg"
               >
                 Limpiar avanzados
               </button>
@@ -388,10 +419,10 @@ const hasActiveFilters = computed(() =>
 )
 
 const advancedFilterCount = computed(() =>
-  Number(media.filterMinRating !== null) + Number(media.filterPlatform !== null)
+  Number(media.filterStatus !== null) + Number(media.filterMinRating !== null) + Number(media.filterPlatform !== null)
 )
 
-type SmartListKey = 'watching' | 'pending' | 'topRated' | 'recent' | 'series' | 'books'
+type SmartListKey = 'watching' | 'pending' | 'topRated' | 'recent'
 
 const smartLists = computed(() => [
   {
@@ -426,22 +457,6 @@ const smartLists = computed(() => [
     activeClass: 'bg-violet-500/15 border-violet-500/35 text-violet-100 shadow-lg shadow-violet-500/10',
     countClass: 'bg-violet-500/25 text-violet-200',
   },
-  {
-    key: 'series' as const,
-    emoji: '📺',
-    label: 'Series',
-    count: media.all.filter(m => m.type === 'series').length,
-    activeClass: 'bg-cyan-500/15 border-cyan-500/35 text-cyan-100 shadow-lg shadow-cyan-500/10',
-    countClass: 'bg-cyan-500/25 text-cyan-200',
-  },
-  {
-    key: 'books' as const,
-    emoji: '📚',
-    label: 'Libros',
-    count: media.all.filter(m => m.type === 'book').length,
-    activeClass: 'bg-amber-500/15 border-amber-500/35 text-amber-100 shadow-lg shadow-amber-500/10',
-    countClass: 'bg-amber-500/25 text-amber-200',
-  },
 ])
 
 const activeSmartList = ref<SmartListKey | null>(null)
@@ -466,8 +481,6 @@ function applySmartList(key: SmartListKey) {
     media.sortField = '$createdAt'
     media.sortOrder = 'DESC'
   }
-  if (key === 'series') media.filterType = 'series'
-  if (key === 'books') media.filterType = 'book'
 }
 
 watch([() => media.filterType, () => media.filterStatus, () => media.filterMinRating, () => media.filterPlatform, () => media.search], () => {
@@ -476,8 +489,6 @@ watch([() => media.filterType, () => media.filterStatus, () => media.filterMinRa
     if (list.key === 'pending') return media.filterStatus === 'pending' && !media.filterType && !media.filterMinRating && !media.filterPlatform && !media.search
     if (list.key === 'topRated') return media.filterMinRating === 8 && media.sortField === 'rating' && media.sortOrder === 'DESC'
     if (list.key === 'recent') return media.sortField === '$createdAt' && media.sortOrder === 'DESC' && !media.filterType && !media.filterStatus && !media.filterMinRating && !media.filterPlatform && !media.search
-    if (list.key === 'series') return media.filterType === 'series' && !media.filterStatus && !media.filterMinRating && !media.filterPlatform && !media.search
-    if (list.key === 'books') return media.filterType === 'book' && !media.filterStatus && !media.filterMinRating && !media.filterPlatform && !media.search
     return false
   })
   activeSmartList.value = matched?.key ?? null
@@ -513,6 +524,18 @@ const activeFilters = computed(() => {
 
 const showAdvanced = ref(false)
 
+function toggleTypeFilter(type: string | null) {
+  media.filterType = media.filterType === type ? null : type
+}
+
+function toggleStatusFilter(status: string) {
+  media.filterStatus = media.filterStatus === status ? null : status
+}
+
+function toggleRatingFilter(rating: number) {
+  media.filterMinRating = media.filterMinRating === rating ? null : rating
+}
+
 function clearAllFilters() {
   media.filterType      = null
   media.filterStatus    = null
@@ -529,6 +552,7 @@ function clearSearch() {
 }
 
 function clearAdvancedFilters() {
+  media.filterStatus = null
   media.filterMinRating = null
   media.filterPlatform  = null
 }
