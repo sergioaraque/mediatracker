@@ -3,13 +3,15 @@
     <div class="max-w-7xl mx-auto">
 
       <!-- ── Row 1: Section navigation ────────────────────────────── -->
-      <div class="flex gap-2 px-4 sm:px-6 lg:px-8 pt-3 pb-2.5 overflow-x-auto scrollbar-none">
+      <div class="flex items-center gap-2 px-4 sm:px-6 lg:px-8 pt-3 pb-2.5 overflow-x-auto scrollbar-none">
+        <span class="text-[10px] font-bold uppercase tracking-[0.22em] text-gray-500 shrink-0">Tipo</span>
         <button
           v-for="s in sections"
           :key="s.key"
-          @click="media.filterType = s.type"
+          @click="toggleTypeFilter(s.type)"
           class="section-tab flex items-center gap-2.5 px-4 py-2.5 rounded-2xl border font-medium text-sm transition-all duration-200 shrink-0 relative overflow-hidden"
           :class="media.filterType === s.type ? s.activeClass : 'bg-white/4 border-white/8 text-gray-400 hover:bg-white/8 hover:text-gray-200 hover:border-white/15'"
+          :aria-pressed="media.filterType === s.type"
         >
           <span class="text-base leading-none select-none">{{ s.emoji }}</span>
           <span class="font-semibold">{{ s.label }}</span>
@@ -391,7 +393,7 @@ const advancedFilterCount = computed(() =>
   Number(media.filterMinRating !== null) + Number(media.filterPlatform !== null)
 )
 
-type SmartListKey = 'watching' | 'pending' | 'topRated' | 'recent' | 'series' | 'books'
+type SmartListKey = 'watching' | 'pending' | 'topRated' | 'recent'
 
 const smartLists = computed(() => [
   {
@@ -426,22 +428,6 @@ const smartLists = computed(() => [
     activeClass: 'bg-violet-500/15 border-violet-500/35 text-violet-100 shadow-lg shadow-violet-500/10',
     countClass: 'bg-violet-500/25 text-violet-200',
   },
-  {
-    key: 'series' as const,
-    emoji: '📺',
-    label: 'Series',
-    count: media.all.filter(m => m.type === 'series').length,
-    activeClass: 'bg-cyan-500/15 border-cyan-500/35 text-cyan-100 shadow-lg shadow-cyan-500/10',
-    countClass: 'bg-cyan-500/25 text-cyan-200',
-  },
-  {
-    key: 'books' as const,
-    emoji: '📚',
-    label: 'Libros',
-    count: media.all.filter(m => m.type === 'book').length,
-    activeClass: 'bg-amber-500/15 border-amber-500/35 text-amber-100 shadow-lg shadow-amber-500/10',
-    countClass: 'bg-amber-500/25 text-amber-200',
-  },
 ])
 
 const activeSmartList = ref<SmartListKey | null>(null)
@@ -466,8 +452,6 @@ function applySmartList(key: SmartListKey) {
     media.sortField = '$createdAt'
     media.sortOrder = 'DESC'
   }
-  if (key === 'series') media.filterType = 'series'
-  if (key === 'books') media.filterType = 'book'
 }
 
 watch([() => media.filterType, () => media.filterStatus, () => media.filterMinRating, () => media.filterPlatform, () => media.search], () => {
@@ -476,8 +460,6 @@ watch([() => media.filterType, () => media.filterStatus, () => media.filterMinRa
     if (list.key === 'pending') return media.filterStatus === 'pending' && !media.filterType && !media.filterMinRating && !media.filterPlatform && !media.search
     if (list.key === 'topRated') return media.filterMinRating === 8 && media.sortField === 'rating' && media.sortOrder === 'DESC'
     if (list.key === 'recent') return media.sortField === '$createdAt' && media.sortOrder === 'DESC' && !media.filterType && !media.filterStatus && !media.filterMinRating && !media.filterPlatform && !media.search
-    if (list.key === 'series') return media.filterType === 'series' && !media.filterStatus && !media.filterMinRating && !media.filterPlatform && !media.search
-    if (list.key === 'books') return media.filterType === 'book' && !media.filterStatus && !media.filterMinRating && !media.filterPlatform && !media.search
     return false
   })
   activeSmartList.value = matched?.key ?? null
@@ -512,6 +494,10 @@ const activeFilters = computed(() => {
 })
 
 const showAdvanced = ref(false)
+
+function toggleTypeFilter(type: string | null) {
+  media.filterType = media.filterType === type ? null : type
+}
 
 function clearAllFilters() {
   media.filterType      = null
