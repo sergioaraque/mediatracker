@@ -56,7 +56,7 @@
             class="hidden sm:inline-flex items-center gap-2 rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-3 py-2 text-xs font-bold text-emerald-300 hover:bg-emerald-500/15 transition-colors"
           >
             <Sparkles class="w-3.5 h-3.5" />
-            Descubrir más
+            Explorar más
           </button>
         </div>
 

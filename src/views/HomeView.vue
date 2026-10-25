@@ -5,7 +5,7 @@
     <!-- Desktop sidebar -->
     <AppSidebar
       @add="formDrawer = true"
-      @search="searchDrawer = true"
+      @search="focusSearch"
       @upcoming="router.push('/upcoming')"
       @tools="toolsDrawer = true"
     />
@@ -65,11 +65,11 @@
             </div>
             <div class="flex-1 min-w-0">
               <p class="text-sm font-semibold text-cyan-100">Atajos para ir mas rapido</p>
-              <p class="text-xs text-cyan-200/80 mt-1">N para anadir, Ctrl+K para comandos y Herramientas para acciones avanzadas.</p>
+              <p class="text-xs text-cyan-200/80 mt-1">N para anadir, Ctrl+K para comandos y Explorar para descubrir recomendaciones.</p>
               <div class="mt-3 flex flex-wrap items-center gap-2">
                 <button @click="formDrawer = true" class="tool-btn"><Plus class="w-3.5 h-3.5" /> Anadir</button>
                 <button @click="showCommandPalette = true" class="tool-btn"><Keyboard class="w-3.5 h-3.5" /> Comandos</button>
-                <button @click="toolsDrawer = true" class="tool-btn"><Compass class="w-3.5 h-3.5" /> Herramientas</button>
+                <button @click="openTool('discover')" class="tool-btn"><Compass class="w-3.5 h-3.5" /> Explorar</button>
               </div>
             </div>
             <button @click="dismissQuickStart" class="btn-ghost p-1.5 rounded-lg shrink-0">
@@ -78,16 +78,6 @@
           </div>
         </div>
       </Transition>
-
-      <HomeInsights
-        :activity-summary="activitySummary"
-        :recommended-now="recommendedNow"
-        :next-in-queue="nextInQueue"
-        :recent-media="recentMedia"
-        @open-tool="openTool"
-        @open-detail="openDetail"
-        @remove-from-queue="q.remove"
-      />
 
       <!-- Section banner -->
       <SectionBanner :type="media.filterType" />
@@ -131,7 +121,7 @@
             <Plus class="w-5 h-5" /> Añadir ahora
           </button>
           <button @click="openTool('discover')" class="btn-secondary px-5 py-3 flex items-center gap-2">
-            <Compass class="w-4 h-4" /> Descubrir
+            <Compass class="w-4 h-4" /> Explorar
           </button>
         </div>
       </div>
@@ -145,7 +135,7 @@
         <p class="text-gray-400 text-sm mb-6">Prueba a cambiar los filtros o la búsqueda.</p>
         <div class="flex flex-wrap justify-center gap-2">
           <button @click="clearFilters" class="btn-secondary text-sm px-4 py-2">Limpiar filtros</button>
-          <button @click="searchDrawer = true" class="btn-secondary text-sm px-4 py-2">Abrir busqueda</button>
+          <button @click="focusSearch" class="btn-secondary text-sm px-4 py-2">Buscar en colección</button>
         </div>
       </div>
 
@@ -192,6 +182,30 @@
         />
       </TransitionGroup>
 
+      <section class="mt-8">
+        <button
+          class="w-full md:w-auto inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-gray-300 hover:bg-white/8 transition-colors"
+          @click="showInsights = !showInsights"
+        >
+          <BarChart2 class="w-3.5 h-3.5" />
+          {{ showInsights ? 'Ocultar panel de seguimiento' : 'Mostrar panel de seguimiento' }}
+        </button>
+
+        <Transition name="fade-down">
+          <div v-if="showInsights" class="mt-4">
+            <HomeInsights
+              :activity-summary="activitySummary"
+              :recommended-now="recommendedNow"
+              :next-in-queue="nextInQueue"
+              :recent-media="recentMedia"
+              @open-tool="openTool"
+              @open-detail="openDetail"
+              @remove-from-queue="q.remove"
+            />
+          </div>
+        </Transition>
+      </section>
+
     </main>
     </div><!-- /main column -->
 
@@ -203,36 +217,30 @@
     />
 
     <!-- Stats drawer -->
-    <StatsDrawer v-model="statsDrawer" />
+    <StatsDrawer v-model="isStatsOpen" />
 
     <!-- Random picker -->
-    <RandomPickerOverlay v-model="randomDrawer" @detail="openDetail" />
+    <RandomPickerOverlay v-model="isRandomOpen" @detail="openDetail" />
 
     <!-- Import -->
-    <ImportDrawer v-model="importDrawer" />
+    <ImportDrawer v-model="isImportOpen" />
 
     <!-- Calendar -->
-    <CalendarDrawer v-model="calendarDrawer" />
+    <CalendarDrawer v-model="isCalendarOpen" />
 
     <!-- Discover drawer -->
-    <DiscoverDrawer v-model="discoverDrawer" />
-
-    <!-- Advanced Discovery drawer -->
-    <AdvancedDiscoveryDrawer v-model="advancedDiscoveryDrawer" />
-
-    <!-- Search drawer -->
-    <SearchDrawer v-model="searchDrawer" @detail="openDetail" />
+    <DiscoverDrawer v-model="isDiscoverOpen" />
 
     <!-- Queue drawer -->
-    <QueueDrawer v-model="queueDrawer" />
+    <QueueDrawer v-model="isQueueOpen" />
 
     <!-- Mobile bottom navigation -->
     <BottomNav
       active="library"
       @library="() => {}"
       @add="formDrawer = true"
-      @calendar="calendarDrawer = true"
-      @search="searchDrawer = true"
+      @calendar="isCalendarOpen = true"
+      @search="focusSearch"
       @tools="toolsDrawer = true"
     />
 
@@ -254,8 +262,7 @@
             </div>
 
             <div class="grid grid-cols-2 gap-2">
-              <button @click="openTool('discover')" class="tool-btn"><Compass class="w-4 h-4" /> Descubrir</button>
-              <button @click="openTool('advanced')" class="tool-btn"><Sparkles class="w-4 h-4" /> Buscar experto</button>
+              <button @click="openTool('discover')" class="tool-btn"><Compass class="w-4 h-4" /> Explorar</button>
               <button @click="openTool('queue')" class="tool-btn"><ListOrdered class="w-4 h-4" /> Cola</button>
               <button @click="openTool('calendar')" class="tool-btn"><CalendarDays class="w-4 h-4" /> Historial</button>
               <button @click="openTool('stats')" class="tool-btn"><BarChart2 class="w-4 h-4" /> Estadísticas</button>
@@ -309,7 +316,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { Inbox, Plus, SearchX, Trash2, X, Compass, Sparkles, ListOrdered, CalendarDays, BarChart2, Dices, Upload, Lightbulb, Keyboard, RefreshCw, WifiOff } from 'lucide-vue-next'
+import { Inbox, Plus, SearchX, Trash2, X, Compass, ListOrdered, CalendarDays, BarChart2, Dices, Upload, Lightbulb, Keyboard, RefreshCw, WifiOff } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 import { useMediaStore } from '@/stores/media'
 import { useUiStore }    from '@/stores/ui'
@@ -336,8 +343,6 @@ import ImportDrawer           from '@/components/ui/ImportDrawer.vue'
 import CalendarDrawer         from '@/components/ui/CalendarDrawer.vue'
 import CommandPalette         from '@/components/ui/CommandPalette.vue'
 import DiscoverDrawer         from '@/components/ui/DiscoverDrawer.vue'
-import AdvancedDiscoveryDrawer from '@/components/ui/AdvancedDiscoveryDrawer.vue'
-import SearchDrawer           from '@/components/ui/SearchDrawer.vue'
 import QueueDrawer            from '@/components/ui/QueueDrawer.vue'
 import DynamicBackground  from '@/components/layout/DynamicBackground.vue'
 
@@ -358,20 +363,39 @@ const gridCols = computed(() =>
 )
 const formDrawer    = ref(false)
 const detailDrawer  = ref(false)
-const statsDrawer   = ref(false)
-const randomDrawer  = ref(false)
-const importDrawer  = ref(false)
+const activePanel = ref<'stats' | 'random' | 'import' | 'calendar' | 'discover' | 'queue' | null>(null)
 const toolsDrawer   = ref(false)
-const calendarDrawer  = ref(false)
-const discoverDrawer  = ref(false)
-const advancedDiscoveryDrawer = ref(false)
-const searchDrawer    = ref(false)
-const queueDrawer     = ref(false)
 const editTarget   = ref<Media | null>(null)
 const detailTarget = ref<Media | null>(null)
 const deleteTarget = ref<string | null>(null)
 const filterBarRef = ref<InstanceType<typeof FilterBar>>()
 const showQuickStart = ref(localStorage.getItem('mt_quickstart_dismissed') !== 'true')
+const showInsights = ref(false)
+
+const isStatsOpen = computed({
+  get: () => activePanel.value === 'stats',
+  set: v => { if (v) activePanel.value = 'stats'; else if (activePanel.value === 'stats') activePanel.value = null },
+})
+const isRandomOpen = computed({
+  get: () => activePanel.value === 'random',
+  set: v => { if (v) activePanel.value = 'random'; else if (activePanel.value === 'random') activePanel.value = null },
+})
+const isImportOpen = computed({
+  get: () => activePanel.value === 'import',
+  set: v => { if (v) activePanel.value = 'import'; else if (activePanel.value === 'import') activePanel.value = null },
+})
+const isCalendarOpen = computed({
+  get: () => activePanel.value === 'calendar',
+  set: v => { if (v) activePanel.value = 'calendar'; else if (activePanel.value === 'calendar') activePanel.value = null },
+})
+const isDiscoverOpen = computed({
+  get: () => activePanel.value === 'discover',
+  set: v => { if (v) activePanel.value = 'discover'; else if (activePanel.value === 'discover') activePanel.value = null },
+})
+const isQueueOpen = computed({
+  get: () => activePanel.value === 'queue',
+  set: v => { if (v) activePanel.value = 'queue'; else if (activePanel.value === 'queue') activePanel.value = null },
+})
 
 useAchievements()
 
@@ -428,22 +452,25 @@ function clearFilters() {
   media.search          = ''
 }
 
+function focusSearch() {
+  filterBarRef.value?.focusSearch()
+}
+
 function dismissQuickStart() {
   showQuickStart.value = false
   localStorage.setItem('mt_quickstart_dismissed', 'true')
 }
 
-type ToolKey = 'discover' | 'advanced' | 'queue' | 'calendar' | 'stats' | 'random' | 'import'
+type ToolKey = 'discover' | 'queue' | 'calendar' | 'stats' | 'random' | 'import'
 
 function openTool(tool: ToolKey) {
   toolsDrawer.value = false
-  if (tool === 'discover') discoverDrawer.value = true
-  if (tool === 'advanced') advancedDiscoveryDrawer.value = true
-  if (tool === 'queue') queueDrawer.value = true
-  if (tool === 'calendar') calendarDrawer.value = true
-  if (tool === 'stats') statsDrawer.value = true
-  if (tool === 'random') randomDrawer.value = true
-  if (tool === 'import') importDrawer.value = true
+  if (tool === 'discover') isDiscoverOpen.value = true
+  if (tool === 'queue') isQueueOpen.value = true
+  if (tool === 'calendar') isCalendarOpen.value = true
+  if (tool === 'stats') isStatsOpen.value = true
+  if (tool === 'random') isRandomOpen.value = true
+  if (tool === 'import') isImportOpen.value = true
 }
 </script>
 
