@@ -38,13 +38,22 @@
           </button>
         </Transition>
       </div>
-      <div class="px-4 sm:px-6 lg:px-8 pb-2">
+      <div class="px-4 sm:px-6 lg:px-8 pb-2 flex items-center justify-between gap-2">
         <p class="text-[11px] text-gray-500">Tip: toca de nuevo un filtro activo para quitarlo.</p>
+        <button
+          @click="showSmartLists = !showSmartLists"
+          class="text-[11px] font-semibold px-2.5 py-1 rounded-lg border transition-colors"
+          :class="showSmartLists || activeSmartList
+            ? 'border-violet-500/35 bg-violet-500/15 text-violet-200'
+            : 'border-white/10 bg-white/5 text-gray-400 hover:bg-white/8 hover:text-gray-200'"
+        >
+          Atajos
+        </button>
       </div>
 
       <!-- Smart lists -->
-      <div class="flex items-center gap-2 px-4 sm:px-6 lg:px-8 pb-2 overflow-x-auto scrollbar-none">
-        <span class="text-[10px] font-bold uppercase tracking-[0.22em] text-gray-500 shrink-0">Listas inteligentes</span>
+      <div v-if="showSmartLists || activeSmartList" class="flex items-center gap-2 px-4 sm:px-6 lg:px-8 pb-2 overflow-x-auto scrollbar-none">
+        <span class="text-[10px] font-bold uppercase tracking-[0.22em] text-gray-500 shrink-0">Atajos inteligentes</span>
         <button
           v-for="list in smartLists"
           :key="list.key"
@@ -460,6 +469,7 @@ const smartLists = computed(() => [
 ])
 
 const activeSmartList = ref<SmartListKey | null>(null)
+const showSmartLists = ref(false)
 
 function applySmartList(key: SmartListKey) {
   activeSmartList.value = key
@@ -492,6 +502,7 @@ watch([() => media.filterType, () => media.filterStatus, () => media.filterMinRa
     return false
   })
   activeSmartList.value = matched?.key ?? null
+  if (activeSmartList.value) showSmartLists.value = true
 })
 
 const activeFilters = computed(() => {
